@@ -6,6 +6,16 @@ import { useState } from 'react'
 export default function GeneratePDF() {
   const [loading, setLoading] = useState(false)
 
+  // 🧩 >>> ici on place les FAUSSES données de test
+  const fakeVisitData = {
+    date: '2025-09-24',
+    address: '24 rue Victor Hugo, Limoges',
+    redacteur: 'Samuel KITA',
+    arrivalTime: '09h15',
+    departureTime: '10h30',
+    buildingCode: '159B',
+    personnesPresentes: 'Mme Dupont, M. Leblanc',
+
   const handleGeneratePDF = async () => {
     setLoading(true)
 
