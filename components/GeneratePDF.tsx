@@ -42,7 +42,7 @@ export default function GeneratePDF() {
       const pdfBytes = await pdfDoc.save()
 
       // 7. Téléchargement
-      const blob = new Blob([pdfBytes.buffer], { type: 'application/pdf' })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
