@@ -1,4 +1,4 @@
-import VisitForm from '@/components/VisitForm'
+import VisitForm from '../components/VisitForm'
 
 export default function Home() {
   return (
