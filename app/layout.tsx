@@ -1,3 +1,5 @@
+import './globals.css'
+
 export const metadata = {
   title: 'Rapport Copropriété ORPI',
   description: 'Générateur de rapports de visite de copropriété',
