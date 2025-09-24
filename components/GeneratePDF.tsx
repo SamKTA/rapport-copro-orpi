@@ -15,6 +15,7 @@ export default function GeneratePDF() {
     departureTime: '10h30',
     buildingCode: '159B',
     personnesPresentes: 'Mme Dupont, M. Leblanc',
+    }
 
   const handleGeneratePDF = async () => {
     setLoading(true)
