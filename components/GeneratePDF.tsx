@@ -203,24 +203,16 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
 
       const pdfBase64 = Buffer.from(pdfBytes).toString('base64')
 
-      await fetch('https://api.resend.com/emails', {
+      await fetch('/api/send-pdf', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'onboarding@resend.dev', // 🔁 Modifier selon domaine validé chez Resend
           to: recipient,
-          subject: `Rapport de visite - ${visitData.address} - ${visitData.date}`,
-          html: `<p>Bonjour,<br><br>Veuillez trouver ci-joint le rapport de visite effectué à l'adresse : <strong>${visitData.address}</strong> le <strong>${visitData.date}</strong>.<br><br>Cordialement,<br>Service Syndic ORPI</p>`,
-          attachments: [
-            {
-              filename: 'rapport-visite.pdf',
-              content: pdfBase64,
-              type: 'application/pdf',
-            },
-          ],
+          address: visitData.address,
+          date: visitData.date,
+          pdfBase64,
         }),
       })
 
