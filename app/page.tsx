@@ -6,6 +6,13 @@ import ObservationForm from '../components/ObservationForm'
 import SignaturePad from '../components/SignaturePad'
 import GeneratePDF from '../components/GeneratePDF'
 
+interface Observation {
+  type: string
+  description: string
+  action?: string
+  photos: File[]
+}
+
 export default function Home() {
   const [visitData, setVisitData] = useState({
     date: '',
@@ -17,6 +24,9 @@ export default function Home() {
     personnesPresentes: ''
   })
 
+  const [observations, setObservations] = useState<Observation[]>([])
+  const [signatureData, setSignatureData] = useState<string | undefined>(undefined)
+
   return (
     <main className="min-h-screen bg-gray-100 py-10">
       <div className="max-w-3xl mx-auto space-y-10 px-4">
@@ -27,16 +37,23 @@ export default function Home() {
 
         <div className="bg-white rounded-xl shadow p-6 space-y-4">
           <h2 className="text-xl font-bold text-gray-800">🔍 Observations</h2>
-          <ObservationForm />
+          <ObservationForm
+            observations={observations}
+            setObservations={setObservations}
+          />
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 space-y-4">
           <h2 className="text-xl font-bold text-gray-800">✍️ Signature du rédacteur</h2>
-          <SignaturePad />
+          <SignaturePad setSignatureData={setSignatureData} />
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 space-y-4 text-center">
-          <GeneratePDF visitData={visitData} />
+          <GeneratePDF
+            visitData={visitData}
+            observations={observations}
+            signatureDataURL={signatureData}
+          />
         </div>
       </div>
     </main>
