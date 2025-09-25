@@ -1,69 +1,94 @@
 'use client'
 
-import { useState } from 'react'
+import { ChangeEvent } from 'react'
 
-export default function VisitForm() {
-  const [formData, setFormData] = useState({
-    date: '',
-    address: '',
-    redacteur: '',
-    arrivalTime: '',
-    departureTime: '',
-    buildingCode: '',
-    personnesPresentes: '',
-  })
+interface VisitData {
+  date: string
+  address: string
+  redacteur: string
+  arrivalTime: string
+  departureTime: string
+  buildingCode: string
+  personnesPresentes: string
+}
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+interface VisitFormProps {
+  visitData: VisitData
+  setVisitData: React.Dispatch<React.SetStateAction<VisitData>>
+}
+
+export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData({ ...formData, [name]: value })
+    setVisitData((prev) => ({ ...prev, [name]: value }))
   }
 
   return (
-    <section className="bg-white shadow-lg rounded-2xl p-8 max-w-2xl mx-auto mt-10 border border-gray-200">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">📝 Informations générales</h2>
+    <form className="space-y-4 bg-white p-6 rounded shadow">
+      <h2 className="text-xl font-bold text-gray-800">Informations de visite</h2>
 
-      <div className="space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">📅 Date de la visite</label>
-          <input type="date" name="date" value={formData.date} onChange={handleChange} className="input" />
-        </div>
+      <input
+        type="date"
+        name="date"
+        value={visitData.date}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Date"
+      />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">🏠 Adresse</label>
-          <input type="text" name="address" value={formData.address} onChange={handleChange} className="input" placeholder="Ex : 24 rue Victor Hugo, Limoges" />
-        </div>
+      <input
+        type="text"
+        name="address"
+        value={visitData.address}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Adresse"
+      />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">✍️ Rédacteur</label>
-          <select name="redacteur" value={formData.redacteur} onChange={handleChange} className="input">
-            <option value="">-- Choisir --</option>
-            <option value="David SAINT-GERMAIN">David SAINT-GERMAIN</option>
-            <option value="Elodie BONNAY">Elodie BONNAY</option>
-            <option value="Samuel KITA">Samuel KITA</option>
-          </select>
-        </div>
+      <input
+        type="text"
+        name="redacteur"
+        value={visitData.redacteur}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Rédacteur"
+      />
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">🕘 Heure d'arrivée</label>
-            <input type="text" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} className="input" placeholder="Ex : 09h15" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">🕥 Heure de départ</label>
-            <input type="text" name="departureTime" value={formData.departureTime} onChange={handleChange} className="input" placeholder="Ex : 10h30" />
-          </div>
-        </div>
+      <input
+        type="text"
+        name="arrivalTime"
+        value={visitData.arrivalTime}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Heure d'arrivée"
+      />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">🔐 Code immeuble</label>
-          <input type="text" name="buildingCode" value={formData.buildingCode} onChange={handleChange} className="input" placeholder="Ex : 159B" />
-        </div>
+      <input
+        type="text"
+        name="departureTime"
+        value={visitData.departureTime}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Heure de départ"
+      />
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">👥 Personnes présentes</label>
-          <textarea name="personnesPresentes" value={formData.personnesPresentes} onChange={handleChange} className="input" rows={3} placeholder="Ex : M. Dupont (propriétaire), Mme Durant (syndic bénévole)" />
-        </div>
-      </div>
-    </section>
+      <input
+        type="text"
+        name="buildingCode"
+        value={visitData.buildingCode}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Code immeuble"
+      />
+
+      <textarea
+        name="personnesPresentes"
+        value={visitData.personnesPresentes}
+        onChange={handleChange}
+        className="w-full border p-2 rounded"
+        placeholder="Personnes présentes"
+        rows={3}
+      />
+    </form>
   )
 }
