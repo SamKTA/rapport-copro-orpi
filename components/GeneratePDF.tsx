@@ -84,37 +84,72 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
 
       // PAGE(S) — Observations
       for (let i = 0; i < observations.length; i++) {
-        const obs = observations[i]
-        page = pdfDoc.addPage(pageSize)
-        y = height - 50
+  const obs = observations[i]
 
-        const type = sanitizeText(obs.type)
-        const description = sanitizeText(obs.description)
-        const action = sanitizeText(obs.action || '')
-        const isPositive = type.toLowerCase().includes('positive')
+  // Créer une page vide pour chaque observation
+  page = pdfDoc.addPage(pageSize)
+  y = height - 50
 
-        const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
+  const type = sanitizeText(obs.type)
+  const description = sanitizeText(obs.description)
+  const action = sanitizeText(obs.action || '')
+  const isPositive = type.toLowerCase().includes('positive')
 
-        page.drawText(`Observation ${i + 1} - ${type}`, {
-          x: 50,
-          y,
-          size: 18,
-          font: fontBold,
-          color: titleColor,
-        })
-        y -= 40
+  const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
 
-        page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
-        y -= 20
-        page.drawText(description, { x: 50, y, size: 12, font })
-        y -= 40
+  // Titre de l'observation
+  page.drawText(`Observation ${i + 1} - ${type}`, {
+    x: 50,
+    y,
+    size: 18,
+    font: fontBold,
+    color: titleColor,
+  })
+  y -= 40
 
-        if (action) {
-          page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
-          y -= 20
-          page.drawText(action, { x: 50, y, size: 12, font })
-          y -= 40
-        }
+  // Description
+  page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
+  y -= 20
+  page.drawText(description, { x: 50, y, size: 12, font })
+  y -= 40
+
+  // Action à mener (facultative)
+  if (action) {
+    page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
+    y -= 20
+    page.drawText(action, { x: 50, y, size: 12, font })
+    y -= 40
+  }
+
+  // Affichage des images sur la même page
+  for (const photo of obs.photos || []) {
+    const arrayBuffer = await photo.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+
+    let img
+    try {
+      img = await pdfDoc.embedPng(uint8Array)
+    } catch {
+      img = await pdfDoc.embedJpg(uint8Array)
+    }
+
+    const scaled = img.scale(0.2) // ✅ plus petit pour tenir sur la page
+
+    // Si on n’a pas la place, on décale un peu
+    if (y - scaled.height < 50) {
+      y = height - 50
+    }
+
+    page.drawImage(img, {
+      x: 50,
+      y: y - scaled.height,
+      width: scaled.width,
+      height: scaled.height,
+    })
+
+    y -= scaled.height + 20
+  }
+}
 
         for (const photo of obs.photos || []) {
           const arrayBuffer = await photo.arrayBuffer()
