@@ -83,42 +83,75 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
       // PAGES 2+ — Observations
-      for (let i = 0; i < observations.length; i++) {
-        const obs = observations[i]
+      // OBSERVATIONS
+for (let i = 0; i < observations.length; i++) {
+  const obs = observations[i]
 
-        page = pdfDoc.addPage(pageSize)
-        let y = height - 50
+  // ➕ Nouvelle page par observation
+  page = pdfDoc.addPage(pageSize)
+  let y = height - 50
 
-        const type = sanitizeText(obs.type)
-        const description = sanitizeText(obs.description)
-        const action = sanitizeText(obs.action || '')
-        const isPositive = type.toLowerCase().includes('positive')
+  const type = sanitizeText(obs.type)
+  const description = sanitizeText(obs.description)
+  const action = sanitizeText(obs.action || '')
+  const isPositive = type.toLowerCase().includes('positive')
+  const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
 
-        const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
+  // 🟢 Titre
+  page.drawText(`Observation ${i + 1} - ${type}`, {
+    x: 50,
+    y,
+    size: 18,
+    font: fontBold,
+    color: titleColor,
+  })
+  y -= 30
 
-        // Titre
-        page.drawText(`Observation ${i + 1} - ${type}`, {
-          x: 50,
-          y,
-          size: 18,
-          font: fontBold,
-          color: titleColor,
-        })
-        y -= 40
+  // 📄 Description
+  page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
+  y -= 20
+  page.drawText(description, { x: 50, y, size: 12, font })
+  y -= 30
 
-        // Description
-        page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
-        y -= 20
-        page.drawText(description, { x: 50, y, size: 12, font })
-        y -= 40
+  // 🛠️ Action (optionnelle)
+  if (action) {
+    page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
+    y -= 20
+    page.drawText(action, { x: 50, y, size: 12, font })
+    y -= 30
+  }
 
-        if (action) {
-          page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
-          y -= 20
-          page.drawText(action, { x: 50, y, size: 12, font })
-          y -= 40
-        }
+  // 📸 Image(s)
+  for (const photo of obs.photos || []) {
+    const arrayBuffer = await photo.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
 
+    let img
+    try {
+      img = await pdfDoc.embedPng(uint8Array)
+    } catch {
+      img = await pdfDoc.embedJpg(uint8Array)
+    }
+
+    const scaled = img.scale(0.1) // 🔍 Réduction encore plus forte
+
+    // ⚠️ Si pas assez de place : on passe à une nouvelle page
+    if (y - scaled.height < 50) {
+      page = pdfDoc.addPage(pageSize)
+      y = height - 50
+    }
+
+    page.drawImage(img, {
+      x: 50,
+      y: y - scaled.height,
+      width: scaled.width,
+      height: scaled.height,
+    })
+
+    y -= scaled.height + 20
+  }
+}
+      
         for (const photo of obs.photos || []) {
           const arrayBuffer = await photo.arrayBuffer()
           const uint8Array = new Uint8Array(arrayBuffer)
