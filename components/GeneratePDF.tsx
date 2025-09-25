@@ -210,7 +210,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'rapport@ton-domaine.fr', // 🔁 Modifier selon domaine validé chez Resend
+          from: 'onboarding@resend.dev', // 🔁 Modifier selon domaine validé chez Resend
           to: recipient,
           subject: `Rapport de visite - ${visitData.address} - ${visitData.date}`,
           html: `<p>Bonjour,<br><br>Veuillez trouver ci-joint le rapport de visite effectué à l'adresse : <strong>${visitData.address}</strong> le <strong>${visitData.date}</strong>.<br><br>Cordialement,<br>Service Syndic ORPI</p>`,
