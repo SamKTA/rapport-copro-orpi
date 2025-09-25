@@ -187,6 +187,39 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         })
       }
 
+// ✅ Envoi du PDF par email via Resend
+const recipient =
+  visitData.redacteur === 'Elodie BONNAY'
+    ? 'ebonnay@orpi.com'
+    : visitData.redacteur === 'David SAINT-GERMAIN'
+    ? 'dsaintgermain@orpi.com'
+    : 'skita@orpi.com'
+
+// Conversion du PDF en base64
+const pdfBase64 = Buffer.from(pdfBytes).toString('base64')
+
+// Envoi HTTP vers l'API Resend
+await fetch('https://api.resend.com/emails', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    from: 'rapport@ton-domaine.fr', // 🔁 À personnaliser dans ton espace Resend
+    to: recipient,
+    subject: `Rapport de visite - ${visitData.address} - ${visitData.date}`,
+    html: `<p>Bonjour,<br><br>Veuillez trouver ci-joint le rapport de visite effectué à l'adresse : <strong>${visitData.address}</strong> le <strong>${visitData.date}</strong>.<br><br>Cordialement,<br>Service Syndic ORPI</p>`,
+    attachments: [
+      {
+        filename: 'rapport-visite.pdf',
+        content: pdfBase64,
+        type: 'application/pdf'
+      }
+    ]
+  })
+})
+      
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const link = document.createElement('a')
@@ -213,33 +246,3 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
     </div>
   )
 }
-
-const recipient =
-  visitData.redacteur === 'Elodie BONNAY'
-    ? 'ebonnay@orpi.com'
-    : visitData.redacteur === 'David SAINT-GERMAIN'
-    ? 'dsaintgermain@orpi.com'
-    : 'skita@orpi.com'
-
-const pdfBase64 = Buffer.from(pdfBytes).toString('base64')
-
-await fetch('https://api.resend.com/emails', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    from: 'rapport@ton-domaine.fr', // Remplace par un domaine validé chez Resend
-    to: recipient,
-    subject: `Rapport de visite - ${visitData.address} - ${visitData.date}`,
-    html: `<p>Bonjour,<br><br>Veuillez trouver ci-joint le rapport de visite effectué à l'adresse : <strong>${visitData.address}</strong> le <strong>${visitData.date}</strong>.<br><br>Cordialement,<br>Service Syndic ORPI</p>`,
-    attachments: [
-      {
-        filename: 'rapport-visite.pdf',
-        content: pdfBase64,
-        type: 'application/pdf'
-      }
-    ]
-  })
-})
