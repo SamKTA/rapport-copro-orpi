@@ -15,6 +15,13 @@ function cleanText(text: string): string {
     .trim()
 }
 
+// Fonction de nettoyage : supprime tout caractère non compatible avec WinAnsi (emoji, symbole, etc.)
+function sanitizeText(text: string) {
+  return text.normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '')   // retire les accents
+    .replace(/[^\x00-\x7F]/g, '')      // retire les caractères non-ASCII
+}
+
 export default function GeneratePDF({ visitData }: { visitData: any }) {
   const [loading, setLoading] = useState(false)
 
