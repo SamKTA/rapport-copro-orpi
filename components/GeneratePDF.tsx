@@ -6,7 +6,7 @@ import { useState } from 'react'
 export default function GeneratePDF() {
   const [loading, setLoading] = useState(false)
 
-  // 🧩 >>> ici on place les FAUSSES données de test
+  // 🧩 Données fictives de test
   const fakeVisitData = {
     date: '2025-09-24',
     address: '24 rue Victor Hugo, Limoges',
@@ -14,24 +14,22 @@ export default function GeneratePDF() {
     arrivalTime: '09h15',
     departureTime: '10h30',
     buildingCode: '159B',
-    personnesPresentes: 'Mme Dupont, M. Leblanc',
-    }
+    personnesPresentes: 'Mme Dupont, M. Leblanc'
+  }
 
   const handleGeneratePDF = async () => {
     setLoading(true)
 
     try {
-      // 1. Crée un nouveau document PDF
+      // 1. Nouveau PDF
       const pdfDoc = await PDFDocument.create()
+      const page = pdfDoc.addPage([595.28, 841.89]) // A4
 
-      // 2. Ajoute une page
-      const page = pdfDoc.addPage([595.28, 841.89]) // format A4 en points
-
-      // 3. Police
+      // 2. Polices et dimensions
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
       const { width, height } = page.getSize()
 
-      // 4. Titre
+      // 3. Titre
       page.drawText('Rapport de Visite', {
         x: 50,
         y: height - 50,
@@ -40,19 +38,31 @@ export default function GeneratePDF() {
         color: rgb(0.9, 0, 0),
       })
 
-      // 5. Exemple de texte
-      page.drawText('Ceci est un test PDF généré dans le navigateur 🚀', {
-        x: 50,
-        y: height - 100,
-        size: 14,
-        font,
-        color: rgb(0, 0, 0),
-      })
+      // 4. Données de la visite
+      const lineHeight = 20
+      let y = height - 90
 
-      // 6. Sauvegarde
+      const addLine = (label: string, value: string) => {
+        page.drawText(`${label} ${value}`, {
+          x: 50,
+          y,
+          size: 12,
+          font,
+          color: rgb(0, 0, 0),
+        })
+        y -= lineHeight
+      }
+
+      addLine('📅 Date :', fakeVisitData.date)
+      addLine('🏠 Adresse :', fakeVisitData.address)
+      addLine('✍️ Rédacteur :', fakeVisitData.redacteur)
+      addLine('🕘 Heure d\'arrivée :', fakeVisitData.arrivalTime)
+      addLine('🕥 Heure de départ :', fakeVisitData.departureTime)
+      addLine('🔐 Code immeuble :', fakeVisitData.buildingCode)
+      addLine('👥 Personnes présentes :', fakeVisitData.personnesPresentes)
+
+      // 5. Sauvegarde et téléchargement
       const pdfBytes = await pdfDoc.save()
-
-      // 7. Téléchargement
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
