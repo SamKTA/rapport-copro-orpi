@@ -6,6 +6,11 @@ import { useState } from 'react'
 export default function GeneratePDF() {
   const [loading, setLoading] = useState(false)
 
+  // ✅ Fonction utilitaire pour supprimer les caractères non-ASCII
+  function cleanText(text: string): string {
+    return text.replace(/[^\x00-\x7F]/g, '') // supprime les emojis et caractères spéciaux
+  }
+
   // 🧩 Données fictives de test
   const fakeVisitData = {
     date: '2025-09-24',
@@ -30,7 +35,7 @@ export default function GeneratePDF() {
       const { width, height } = page.getSize()
 
       // 3. Titre
-      page.drawText('Rapport de Visite', {
+      page.drawText(cleanText('Rapport de Visite'), {
         x: 50,
         y: height - 50,
         size: 24,
@@ -43,7 +48,7 @@ export default function GeneratePDF() {
       let y = height - 90
 
       const addLine = (label: string, value: string) => {
-        page.drawText(`${label} ${value}`, {
+        page.drawText(cleanText(`${label} ${value}`), {
           x: 50,
           y,
           size: 12,
@@ -53,13 +58,13 @@ export default function GeneratePDF() {
         y -= lineHeight
       }
 
-      addLine('📅 Date :', fakeVisitData.date)
-      addLine('🏠 Adresse :', fakeVisitData.address)
-      addLine('✍️ Rédacteur :', fakeVisitData.redacteur)
-      addLine('🕘 Heure d\'arrivée :', fakeVisitData.arrivalTime)
-      addLine('🕥 Heure de départ :', fakeVisitData.departureTime)
-      addLine('🔐 Code immeuble :', fakeVisitData.buildingCode)
-      addLine('👥 Personnes présentes :', fakeVisitData.personnesPresentes)
+      addLine('Date :', fakeVisitData.date)
+      addLine('Adresse :', fakeVisitData.address)
+      addLine('Redacteur :', fakeVisitData.redacteur)
+      addLine("Heure d'arrivee :", fakeVisitData.arrivalTime)
+      addLine('Heure de depart :', fakeVisitData.departureTime)
+      addLine('Code immeuble :', fakeVisitData.buildingCode)
+      addLine('Personnes presentes :', fakeVisitData.personnesPresentes)
 
       // 5. Sauvegarde et téléchargement
       const pdfBytes = await pdfDoc.save()
