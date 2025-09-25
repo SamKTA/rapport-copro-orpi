@@ -3,39 +3,33 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { useState } from 'react'
 
-export default function GeneratePDF() {
+// Fonction utilitaire pour nettoyer le texte
+function cleanText(text: string): string {
+  return text
+    .normalize('NFKD')
+    .replace(/[^\x00-\x7F]/g, '') // supprime les caractères non-ASCII
+    .replace(/[\u2018\u2019]/g, "'") // apostrophes courbes
+    .replace(/[\u201C\u201D]/g, '"') // guillemets courbes
+    .replace(/[\u2026]/g, '...')     // points de suspension
+    .replace(/[\u2013\u2014]/g, '-') // tirets
+    .trim()
+}
+
+export default function GeneratePDF({ visitData }: { visitData: any }) {
   const [loading, setLoading] = useState(false)
-
-  // ✅ Fonction utilitaire pour supprimer les caractères non-ASCII
-  function cleanText(text: string): string {
-    return text.replace(/[^\x00-\x7F]/g, '') // supprime les emojis et caractères spéciaux
-  }
-
-  // 🧩 Données fictives de test
-  const fakeVisitData = {
-    date: '2025-09-24',
-    address: '24 rue Victor Hugo, Limoges',
-    redacteur: 'Samuel KITA',
-    arrivalTime: '09h15',
-    departureTime: '10h30',
-    buildingCode: '159B',
-    personnesPresentes: 'Mme Dupont, M. Leblanc'
-  }
 
   const handleGeneratePDF = async () => {
     setLoading(true)
 
     try {
-      // 1. Nouveau PDF
       const pdfDoc = await PDFDocument.create()
-      const page = pdfDoc.addPage([595.28, 841.89]) // A4
+      const page = pdfDoc.addPage([595.28, 841.89]) // format A4
 
-      // 2. Polices et dimensions
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-      const { width, height } = page.getSize()
+      const { height } = page.getSize()
 
-      // 3. Titre
-      page.drawText(cleanText('Rapport de Visite'), {
+      // Titre
+      page.drawText('Rapport de Visite', {
         x: 50,
         y: height - 50,
         size: 24,
@@ -43,12 +37,13 @@ export default function GeneratePDF() {
         color: rgb(0.9, 0, 0),
       })
 
-      // 4. Données de la visite
+      // Contenu
       const lineHeight = 20
       let y = height - 90
 
       const addLine = (label: string, value: string) => {
-        page.drawText(cleanText(`${label} ${value}`), {
+        const text = `${label} ${cleanText(value || '')}`
+        page.drawText(text, {
           x: 50,
           y,
           size: 12,
@@ -58,15 +53,14 @@ export default function GeneratePDF() {
         y -= lineHeight
       }
 
-      addLine('Date :', fakeVisitData.date)
-      addLine('Adresse :', fakeVisitData.address)
-      addLine('Redacteur :', fakeVisitData.redacteur)
-      addLine("Heure d'arrivee :", fakeVisitData.arrivalTime)
-      addLine('Heure de depart :', fakeVisitData.departureTime)
-      addLine('Code immeuble :', fakeVisitData.buildingCode)
-      addLine('Personnes presentes :', fakeVisitData.personnesPresentes)
+      addLine('📅 Date :', visitData.date)
+      addLine('🏠 Adresse :', visitData.address)
+      addLine('✍️ Rédacteur :', visitData.redacteur)
+      addLine('🕘 Heure d\'arrivée :', visitData.arrivalTime)
+      addLine('🕥 Heure de départ :', visitData.departureTime)
+      addLine('🔐 Code immeuble :', visitData.buildingCode)
+      addLine('👥 Personnes présentes :', visitData.personnesPresentes)
 
-      // 5. Sauvegarde et téléchargement
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const link = document.createElement('a')
