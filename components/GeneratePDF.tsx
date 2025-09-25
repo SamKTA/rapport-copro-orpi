@@ -68,9 +68,9 @@ export default function GeneratePDF() {
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
       link.click()
-    } catch (err) {
-      alert('Erreur lors de la génération du PDF')
-      console.error(err)
+    } catch (err: any) {
+      console.error('Erreur détaillée :', err)
+      alert(`Erreur PDF : ${err.message || 'voir console'}`)
     } finally {
       setLoading(false)
     }
