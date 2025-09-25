@@ -25,8 +25,9 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">📅 Date</label>
+      {/* Date */}
+      <div className="space-y-2">
+        <label htmlFor="date" className="block text-sm font-medium text-gray-700">Date</label>
         <input
           type="date"
           name="date"
@@ -36,20 +37,22 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">🏠 Adresse</label>
+      {/* Adresse */}
+      <div className="space-y-2">
+        <label htmlFor="address" className="block text-sm font-medium text-gray-700">Adresse</label>
         <input
           type="text"
           name="address"
           value={visitData.address}
           onChange={handleChange}
           className="w-full border border-gray-300 p-3 rounded-md"
-          placeholder="Adresse"
+          placeholder="Ex : 12 rue Victor Hugo"
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">🧑‍💼 Rédacteur</label>
+      {/* Rédacteur */}
+      <div className="space-y-2">
+        <label htmlFor="redacteur" className="block text-sm font-medium text-gray-700">Rédacteur</label>
         <select
           name="redacteur"
           value={visitData.redacteur}
@@ -63,8 +66,9 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         </select>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">🕘 Heure d'arrivée</label>
+      {/* Heure d'arrivée */}
+      <div className="space-y-2">
+        <label htmlFor="arrivalTime" className="block text-sm font-medium text-gray-700">Heure d'arrivée</label>
         <input
           type="text"
           name="arrivalTime"
@@ -75,8 +79,9 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">🕥 Heure de départ</label>
+      {/* Heure de départ */}
+      <div className="space-y-2">
+        <label htmlFor="departureTime" className="block text-sm font-medium text-gray-700">Heure de départ</label>
         <input
           type="text"
           name="departureTime"
@@ -87,27 +92,29 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">🔐 Code immeuble</label>
+      {/* Code immeuble */}
+      <div className="space-y-2">
+        <label htmlFor="buildingCode" className="block text-sm font-medium text-gray-700">Code immeuble</label>
         <input
           type="text"
           name="buildingCode"
           value={visitData.buildingCode}
           onChange={handleChange}
           className="w-full border border-gray-300 p-3 rounded-md"
-          placeholder="Code d'accès"
+          placeholder="Ex : 258B"
         />
       </div>
 
-      <div className="md:col-span-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">👥 Personnes présentes</label>
+      {/* Personnes présentes */}
+      <div className="md:col-span-2 space-y-2">
+        <label htmlFor="personnesPresentes" className="block text-sm font-medium text-gray-700">Personnes présentes</label>
         <textarea
           name="personnesPresentes"
           value={visitData.personnesPresentes}
           onChange={handleChange}
           className="w-full border border-gray-300 p-3 rounded-md"
           rows={3}
-          placeholder="Noms des personnes sur place"
+          placeholder="Ex : Mme Dupont, M. Leblanc"
         />
       </div>
     </div>
