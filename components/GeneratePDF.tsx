@@ -106,6 +106,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
     color: titleColor,
   })
   y -= 40
+}
 
   // Description
   page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
