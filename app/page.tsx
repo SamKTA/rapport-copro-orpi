@@ -18,11 +18,27 @@ export default function Home() {
   })
 
   return (
-    <main className="min-h-screen bg-gray-50 pb-20 px-4 space-y-10">
-      <VisitForm visitData={visitData} setVisitData={setVisitData} />
-      <ObservationForm />
-      <SignaturePad />
-      <GeneratePDF visitData={visitData} />
+    <main className="min-h-screen bg-gray-100 py-10">
+      <div className="max-w-3xl mx-auto space-y-10 px-4">
+        <div className="bg-white rounded-xl shadow p-6 space-y-4">
+          <h2 className="text-xl font-bold text-gray-800">🗓️ Informations de visite</h2>
+          <VisitForm visitData={visitData} setVisitData={setVisitData} />
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6 space-y-4">
+          <h2 className="text-xl font-bold text-gray-800">🔍 Observations</h2>
+          <ObservationForm />
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6 space-y-4">
+          <h2 className="text-xl font-bold text-gray-800">✍️ Signature du rédacteur</h2>
+          <SignaturePad />
+        </div>
+
+        <div className="bg-white rounded-xl shadow p-6 space-y-4 text-center">
+          <GeneratePDF visitData={visitData} />
+        </div>
+      </div>
     </main>
   )
 }
