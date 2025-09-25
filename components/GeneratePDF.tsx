@@ -24,10 +24,10 @@ interface Props {
   signatureDataURL?: string
 }
 
-// Fonction de nettoyage des textes (pour éviter erreurs PDF)
+// Nettoyage de texte
 function sanitizeText(text: string) {
   return text
-    .normalize("NFD")
+    .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\x00-\x7F]/g, '')
     .replace(/[\u2018\u2019]/g, "'")
@@ -50,10 +50,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       const pageSize: [number, number] = [595.28, 841.89] // A4
       const lineHeight = 20
       let page = pdfDoc.addPage(pageSize)
-      let { height } = page.getSize()
+      const { height } = page.getSize()
       let y = height - 50
 
-      // PAGE 1 — Infos principales
+      // PAGE 1 — Informations générales
       page.drawText('Rapport de Visite', {
         x: 50,
         y,
@@ -82,75 +82,42 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       addLine("Code immeuble :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // PAGE(S) — Observations
+      // PAGES 2+ — Observations
       for (let i = 0; i < observations.length; i++) {
-  const obs = observations[i]
+        const obs = observations[i]
 
-  // Créer une page vide pour chaque observation
-  page = pdfDoc.addPage(pageSize)
-  y = height - 50
+        page = pdfDoc.addPage(pageSize)
+        let y = height - 50
 
-  const type = sanitizeText(obs.type)
-  const description = sanitizeText(obs.description)
-  const action = sanitizeText(obs.action || '')
-  const isPositive = type.toLowerCase().includes('positive')
+        const type = sanitizeText(obs.type)
+        const description = sanitizeText(obs.description)
+        const action = sanitizeText(obs.action || '')
+        const isPositive = type.toLowerCase().includes('positive')
 
-  const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
+        const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
 
-  // Titre de l'observation
-  page.drawText(`Observation ${i + 1} - ${type}`, {
-    x: 50,
-    y,
-    size: 18,
-    font: fontBold,
-    color: titleColor,
-  })
-  y -= 40
-}
+        // Titre
+        page.drawText(`Observation ${i + 1} - ${type}`, {
+          x: 50,
+          y,
+          size: 18,
+          font: fontBold,
+          color: titleColor,
+        })
+        y -= 40
 
-  // Description
-  page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
-  y -= 20
-  page.drawText(description, { x: 50, y, size: 12, font })
-  y -= 40
+        // Description
+        page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
+        y -= 20
+        page.drawText(description, { x: 50, y, size: 12, font })
+        y -= 40
 
-  // Action à mener (facultative)
-  if (action) {
-    page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
-    y -= 20
-    page.drawText(action, { x: 50, y, size: 12, font })
-    y -= 40
-  }
-
-  // Affichage des images sur la même page
-  for (const photo of obs.photos || []) {
-    const arrayBuffer = await photo.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-
-    let img
-    try {
-      img = await pdfDoc.embedPng(uint8Array)
-    } catch {
-      img = await pdfDoc.embedJpg(uint8Array)
-    }
-
-    const scaled = img.scale(0.2) // ✅ plus petit pour tenir sur la page
-
-    // Si on n’a pas la place, on décale un peu
-    if (y - scaled.height < 50) {
-      y = height - 50
-    }
-
-    page.drawImage(img, {
-      x: 50,
-      y: y - scaled.height,
-      width: scaled.width,
-      height: scaled.height,
-    })
-
-    y -= scaled.height + 20
-  }
-}
+        if (action) {
+          page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
+          y -= 20
+          page.drawText(action, { x: 50, y, size: 12, font })
+          y -= 40
+        }
 
         for (const photo of obs.photos || []) {
           const arrayBuffer = await photo.arrayBuffer()
@@ -163,9 +130,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
             img = await pdfDoc.embedJpg(uint8Array)
           }
 
-          const scaled = img.scale(0.25)
+          const scaled = img.scale(0.2)
 
           if (y - scaled.height < 50) {
+            // pas assez de place, on saute une nouvelle page (optionnel)
             page = pdfDoc.addPage(pageSize)
             y = height - 50
           }
@@ -177,11 +145,11 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
             height: scaled.height,
           })
 
-          y -= scaled.height + 30
+          y -= scaled.height + 20
         }
       }
 
-      // PAGE FINALE — Signature
+      // DERNIÈRE PAGE — Signature
       page = pdfDoc.addPage(pageSize)
       y = height - 80
 
@@ -224,7 +192,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         })
       }
 
-      // FINALISATION
+      // ✅ Export final
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const link = document.createElement('a')
