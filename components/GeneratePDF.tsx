@@ -3,9 +3,6 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { useState } from 'react'
 
-// 👇 utile pour Buffer dans Vercel/Next.js
-import { Buffer } from 'buffer'
-
 interface Observation {
   type: string
   description: string
@@ -31,13 +28,25 @@ interface Props {
 function sanitizeText(text: string) {
   return text
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0300-\u036f/g, '')
     .replace(/[^\x00-\x7F]/g, '')
     .replace(/[\u2018\u2019]/g, "'")
     .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2026]/g, '...')
     .replace(/[\u2013\u2014]/g, '-')
     .trim()
+}
+
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64data = (reader.result as string).split(',')[1]
+      resolve(base64data)
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
 }
 
 export default function GeneratePDF({ visitData, observations, signatureDataURL }: Props) {
@@ -129,7 +138,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
             img = await pdfDoc.embedJpg(uint8Array)
           }
 
-          const scaled = img.scale(0.1) // Réduction visuelle importante
+          const scaled = img.scale(0.1)
 
           if (y - scaled.height < 50) {
             page = pdfDoc.addPage(pageSize)
@@ -147,7 +156,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }
       }
 
-      // Dernière page — Signature
+      // Derniere page - Signature
       page = pdfDoc.addPage(pageSize)
       y = height - 80
 
@@ -190,10 +199,11 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         })
       }
 
-      // 🧠 1. Génération du PDF (à faire AVANT le fetch Resend)
+      // Sauvegarde et envoi
       const pdfBytes = await pdfDoc.save()
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+      const base64 = await blobToBase64(blob)
 
-      // 🧠 2. Préparation et envoi avec RESEND
       const recipient =
         visitData.redacteur === 'Elodie BONNAY'
           ? 'ebonnay@orpi.com'
@@ -201,28 +211,22 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           ? 'dsaintgermain@orpi.com'
           : 'skita@orpi.com'
 
-      const pdfBase64 = Buffer.from(pdfBytes).toString('base64')
-
       await fetch('/api/send-pdf', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: recipient,
           address: visitData.address,
           date: visitData.date,
-          pdfBase64,
+          pdfBase64: base64,
         }),
       })
 
-      // 🧠 3. Télécharger localement aussi (optionnel)
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+      // Download en local aussi
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
       link.click()
-
     } catch (err: any) {
       console.error('Erreur détaillée :', err)
       alert(`Erreur lors de la génération : ${err.message || 'voir console'}`)
@@ -238,8 +242,4 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         disabled={loading}
         className="px-6 py-3 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition disabled:opacity-50"
       >
-        {loading ? 'Génération en cours...' : '📄 Générer le rapport PDF'}
-      </button>
-    </div>
-  )
-}
+        {loading ? 'Génération en cours...' : '
