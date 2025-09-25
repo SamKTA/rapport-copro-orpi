@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'onboarding@resend.dev', // ou ton domaine validé
+        from: 'rapport@agence-skdigital.fr', // ou ton domaine validé
         to,
         subject: `Rapport de visite - ${address} - ${date}`,
         html: `<p>Bonjour,<br><br>Veuillez trouver ci-joint le rapport de visite effectué à l'adresse : <strong>${address}</strong> le <strong>${date}</strong>.<br><br>Cordialement,<br>Service Syndic ORPI</p>`,
