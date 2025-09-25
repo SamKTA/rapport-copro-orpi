@@ -47,7 +47,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       const pdfDoc = await PDFDocument.create()
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
       const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
-      const pageSize = [number, number] = [595.28, 841.89] // A4
+      const pageSize: [number, number] = [595.28, 841.89] // A4
       const lineHeight = 20
       let page = pdfDoc.addPage(pageSize)
       let { height } = page.getSize()
