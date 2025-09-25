@@ -11,18 +11,27 @@ interface Observation {
 }
 
 interface Props {
-  visitData: any
+  visitData: {
+    date: string
+    address: string
+    redacteur: string
+    arrivalTime: string
+    departureTime: string
+    buildingCode: string
+    personnesPresentes: string
+  }
   observations: Observation[]
   signatureDataURL?: string
 }
 
-function sanitizeText(text: string): string {
+// Fonction de nettoyage des textes (pour éviter erreurs PDF)
+function sanitizeText(text: string) {
   return text
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // accents
-    .replace(/[^\x00-\x7F]/g, '')    // non-ASCII
-    .replace(/[\u2018\u2019]/g, "'") // apostrophes
-    .replace(/[\u201C\u201D]/g, '"') // guillemets
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\x00-\x7F]/g, '')
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
     .replace(/[\u2026]/g, '...')
     .replace(/[\u2013\u2014]/g, '-')
     .trim()
@@ -37,124 +46,149 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
     try {
       const pdfDoc = await PDFDocument.create()
       const font = await pdfDoc.embedFont(StandardFonts.Helvetica)
-
-      // -------- PAGE 1 : Infos principales --------
-      const page = pdfDoc.addPage([595.28, 841.89])
-      const { height } = page.getSize()
-      let y = height - 50
+      const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold)
+      const pageSize = [595.28, 841.89] // A4
       const lineHeight = 20
+      let page = pdfDoc.addPage(pageSize)
+      let { height } = page.getSize()
+      let y = height - 50
 
-      page.drawText('ORPI Adimmo', { x: 50, y, font, size: 16, color: rgb(1, 0, 0) })
-      y -= 30
-      page.drawText('RAPPORT DE VISITE', { x: 200, y, font, size: 18 })
+      // PAGE 1 — Infos principales
+      page.drawText('Rapport de Visite', {
+        x: 50,
+        y,
+        size: 24,
+        font: fontBold,
+        color: rgb(0.9, 0, 0),
+      })
       y -= 40
 
       const addLine = (label: string, value: string) => {
         page.drawText(`${sanitizeText(label)} ${sanitizeText(value)}`, {
           x: 50,
           y,
-          font,
           size: 12,
+          font,
+          color: rgb(0, 0, 0),
         })
         y -= lineHeight
       }
 
       addLine('Date :', visitData.date)
-      addLine('Rédacteur :', visitData.redacteur)
       addLine('Adresse :', visitData.address)
+      addLine('Rédacteur :', visitData.redacteur)
       addLine("Heure d'arrivée :", visitData.arrivalTime)
       addLine("Heure de départ :", visitData.departureTime)
-      addLine('Code :', visitData.buildingCode)
-      addLine('Personnes présentes :', visitData.personnesPresentes)
+      addLine("Code immeuble :", visitData.buildingCode)
+      addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // -------- OBSERVATIONS --------
+      // PAGE(S) — Observations
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
-        const obsPage = pdfDoc.addPage([595.28, 841.89])
-        let yObs = 780
+        page = pdfDoc.addPage(pageSize)
+        y = height - 50
 
-        const obsType = obs.type.includes('Positive') ? 'Positive' : 'À améliorer'
+        const type = sanitizeText(obs.type)
+        const description = sanitizeText(obs.description)
+        const action = sanitizeText(obs.action || '')
+        const isPositive = type.toLowerCase().includes('positive')
 
-        obsPage.drawText('ORPI Adimmo', { x: 50, y: yObs, font, size: 16, color: rgb(1, 0, 0) })
-        yObs -= 30
-        obsPage.drawText('RAPPORT DE VISITE', { x: 200, y: yObs, font, size: 18 })
-        yObs -= 40
+        const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
 
-        obsPage.drawText(`Observation ${i + 1} - ${sanitizeText(obsType)}`, {
+        page.drawText(`Observation ${i + 1} - ${type}`, {
           x: 50,
-          y: yObs,
-          font,
-          size: 14,
+          y,
+          size: 18,
+          font: fontBold,
+          color: titleColor,
         })
-        yObs -= 30
+        y -= 40
 
-        obsPage.drawText('Description :', { x: 50, y: yObs, font, size: 12 })
-        yObs -= 20
-        const descLines = sanitizeText(obs.description).split('\n')
-        descLines.forEach(line => {
-          obsPage.drawText(line, { x: 60, y: yObs, font, size: 11 })
-          yObs -= 16
-        })
+        page.drawText(`Description :`, { x: 50, y, size: 14, font: fontBold })
+        y -= 20
+        page.drawText(description, { x: 50, y, size: 12, font })
+        y -= 40
 
-        if (obs.action) {
-          yObs -= 16
-          obsPage.drawText("Action à mener :", { x: 50, y: yObs, font, size: 12 })
-          yObs -= 20
-          const actLines = sanitizeText(obs.action).split('\n')
-          actLines.forEach(line => {
-            obsPage.drawText(line, { x: 60, y: yObs, font, size: 11 })
-            yObs -= 16
-          })
+        if (action) {
+          page.drawText(`Action à mener :`, { x: 50, y, size: 14, font: fontBold })
+          y -= 20
+          page.drawText(action, { x: 50, y, size: 12, font })
+          y -= 40
         }
 
-        // -------- PHOTOS --------
-        if (obs.photos && obs.photos.length > 0) {
-          yObs -= 20
-          obsPage.drawText('Photos :', { x: 50, y: yObs, font, size: 12 })
-          yObs -= 10
+        for (const photo of obs.photos || []) {
+          const arrayBuffer = await photo.arrayBuffer()
+          const uint8Array = new Uint8Array(arrayBuffer)
 
-          for (let p = 0; p < obs.photos.length; p++) {
-            const photo = obs.photos[p]
-            const imgBytes = await photo.arrayBuffer()
-            const img = await pdfDoc.embedPng(imgBytes)
-            const imgDims = img.scale(0.2)
-
-            if (yObs < 150) {
-              const newPage = pdfDoc.addPage([595.28, 841.89])
-              yObs = 780
-              newPage.drawImage(img, { x: 50, y: yObs - imgDims.height, width: imgDims.width, height: imgDims.height })
-              yObs -= imgDims.height + 20
-            } else {
-              obsPage.drawImage(img, { x: 50, y: yObs - imgDims.height, width: imgDims.width, height: imgDims.height })
-              yObs -= imgDims.height + 20
-            }
+          let img
+          try {
+            img = await pdfDoc.embedPng(uint8Array)
+          } catch {
+            img = await pdfDoc.embedJpg(uint8Array)
           }
+
+          const scaled = img.scale(0.25)
+
+          if (y - scaled.height < 50) {
+            page = pdfDoc.addPage(pageSize)
+            y = height - 50
+          }
+
+          page.drawImage(img, {
+            x: 50,
+            y: y - scaled.height,
+            width: scaled.width,
+            height: scaled.height,
+          })
+
+          y -= scaled.height + 30
         }
       }
 
-      // -------- VALIDATION / SIGNATURE --------
-      const signPage = pdfDoc.addPage([595.28, 841.89])
-      let yVal = 750
+      // PAGE FINALE — Signature
+      page = pdfDoc.addPage(pageSize)
+      y = height - 80
 
-      signPage.drawText('ORPI Adimmo', { x: 50, y: yVal, font, size: 16, color: rgb(1, 0, 0) })
-      yVal -= 30
-      signPage.drawText('RAPPORT DE VISITE', { x: 200, y: yVal, font, size: 18 })
-      yVal -= 60
+      page.drawText('Validation du rapport', {
+        x: 50,
+        y,
+        size: 18,
+        font: fontBold,
+        color: rgb(0, 0, 0),
+      })
+      y -= 40
 
-      signPage.drawText('VALIDATION DU RAPPORT', { x: 180, y: yVal, font, size: 14 })
-      yVal -= 30
-      signPage.drawText(sanitizeText(visitData.redacteur), { x: 220, y: yVal, font, size: 12 })
-      yVal -= 18
-      signPage.drawText('Gestionnaire de copropriété', { x: 180, y: yVal, font, size: 11 })
+      page.drawText(visitData.redacteur, {
+        x: 50,
+        y,
+        size: 14,
+        font,
+      })
+      y -= 20
+
+      page.drawText("Gestionnaire de copropriété", {
+        x: 50,
+        y,
+        size: 12,
+        font,
+        color: rgb(0.3, 0.3, 0.3),
+      })
+      y -= 40
 
       if (signatureDataURL) {
-        const sigImg = await fetch(signatureDataURL).then(res => res.arrayBuffer())
-        const sig = await pdfDoc.embedPng(sigImg)
-        const sigDims = sig.scale(0.5)
-        signPage.drawImage(sig, { x: 170, y: yVal - 80, width: sigDims.width, height: sigDims.height })
+        const signatureBytes = await fetch(signatureDataURL).then(res => res.arrayBuffer())
+        const signatureImg = await pdfDoc.embedPng(signatureBytes)
+        const sigScaled = signatureImg.scale(0.5)
+
+        page.drawImage(signatureImg, {
+          x: 50,
+          y: y - sigScaled.height,
+          width: sigScaled.width,
+          height: sigScaled.height,
+        })
       }
 
-      // -------- EXPORT --------
+      // FINALISATION
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const link = document.createElement('a')
@@ -162,7 +196,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       link.download = 'rapport-visite.pdf'
       link.click()
     } catch (err: any) {
-      console.error('Erreur PDF :', err)
+      console.error('Erreur détaillée :', err)
       alert(`Erreur lors de la génération : ${err.message || 'voir console'}`)
     } finally {
       setLoading(false)
