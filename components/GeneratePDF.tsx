@@ -116,7 +116,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           for (let p = 0; p < obs.photos.length; p++) {
             const photo = obs.photos[p]
             const imgBytes = await photo.arrayBuffer()
-            const img = await pdfDoc.embedJpg(imgBytes)
+            const img = await pdfDoc.embedPng(imgBytes)
             const imgDims = img.scale(0.2)
 
             if (yObs < 150) {
