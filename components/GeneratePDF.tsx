@@ -49,16 +49,15 @@ export default function GeneratePDF({ visitData }: { visitData: any }) {
       let y = height - 90
 
       const addLine = (label: string, value: string) => {
-        const text = `${label} ${cleanText(value || '')}`
-        page.drawText(text, {
-          x: 50,
-          y,
-          size: 12,
-          font,
-          color: rgb(0, 0, 0),
-        })
-        y -= lineHeight
-      }
+        page.drawText(`${label} ${sanitizeText(value)}`, {
+        x: 50,
+        y,
+        size: 12,
+        font,
+        color: rgb(0, 0, 0),
+      })
+      y -= lineHeight
+    }
 
       addLine('📅 Date :', visitData.date)
       addLine('🏠 Adresse :', visitData.address)
