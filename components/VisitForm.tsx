@@ -24,15 +24,13 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
   }
 
   return (
-    <form className="space-y-4 bg-white p-6 rounded shadow">
-      <h2 className="text-xl font-bold text-gray-800">Informations de visite</h2>
-
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <input
         type="date"
         name="date"
         value={visitData.date}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 p-3 rounded-md"
         placeholder="Date"
       />
 
@@ -41,7 +39,7 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         name="address"
         value={visitData.address}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 p-3 rounded-md"
         placeholder="Adresse"
       />
 
@@ -50,7 +48,7 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         name="redacteur"
         value={visitData.redacteur}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 p-3 rounded-md"
         placeholder="Rédacteur"
       />
 
@@ -59,7 +57,7 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         name="arrivalTime"
         value={visitData.arrivalTime}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 p-3 rounded-md"
         placeholder="Heure d'arrivée"
       />
 
@@ -68,7 +66,7 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         name="departureTime"
         value={visitData.departureTime}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 p-3 rounded-md"
         placeholder="Heure de départ"
       />
 
@@ -77,7 +75,7 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         name="buildingCode"
         value={visitData.buildingCode}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full border border-gray-300 p-3 rounded-md"
         placeholder="Code immeuble"
       />
 
@@ -85,10 +83,10 @@ export default function VisitForm({ visitData, setVisitData }: VisitFormProps) {
         name="personnesPresentes"
         value={visitData.personnesPresentes}
         onChange={handleChange}
-        className="w-full border p-2 rounded"
+        className="w-full md:col-span-2 border border-gray-300 p-3 rounded-md"
         placeholder="Personnes présentes"
         rows={3}
       />
-    </form>
+    </div>
   )
 }
