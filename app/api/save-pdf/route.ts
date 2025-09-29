@@ -3,19 +3,27 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Attention, pas la clé anon ici
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: NextRequest) {
   try {
-    const { filename, file, mimetype } = await req.json()
+    const formData = await req.formData()
+    const file = formData.get('file') as File
 
-    const buffer = Buffer.from(file, 'base64')
+    if (!file) {
+      return NextResponse.json({ error: 'Fichier manquant' }, { status: 400 })
+    }
+
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = new Uint8Array(arrayBuffer)
+
+    const filename = `rapport-${Date.now()}.pdf`
 
     const { error } = await supabase.storage
       .from('rapports-visite')
       .upload(filename, buffer, {
-        contentType: mimetype,
+        contentType: 'application/pdf',
         upsert: true,
       })
 
@@ -25,6 +33,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
+    console.error('Erreur API Save PDF :', err)
     return NextResponse.json({ error: err.message || 'Erreur serveur' }, { status: 500 })
   }
 }
