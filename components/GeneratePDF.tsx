@@ -22,6 +22,7 @@ interface Props {
   }
   observations: Observation[]
   signatureDataURL?: string
+  photoCopro?: File | null // ✅ Ajouté pour corriger l'erreur
 }
 
 function sanitizeText(text: string) {
@@ -55,7 +56,13 @@ function cleanFileName(name: string) {
     .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets
 }
 
-export default function GeneratePDF({ visitData, observations, signatureDataURL }: Props) {
+export default function GeneratePDF({
+  visitData,
+  observations,
+  signatureDataURL,
+  photoCopro, // ✅ on ajoute cette ligne ici
+}: Props) {
+  
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
