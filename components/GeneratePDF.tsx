@@ -224,8 +224,8 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          filename: `rapport-visite-${Date.now()}.pdf`,
-          file: base64, // contenu en base64 du PDF
+          filename: `rapport-${visitData.address.replace(/\s+/g, '_')}-${visitData.date}.pdf`,
+          file: base64,
           mimetype: 'application/pdf',
         }),
       })
