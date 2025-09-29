@@ -8,19 +8,21 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    const { filename, file, mimetype } = await req.json()
+    const formData = await req.formData()
+    const file = formData.get('file') as Blob
+    const filename = formData.get('filename') as string
 
-    // ✅ Convertir base64 en Uint8Array (manuellement sans Buffer)
-    const binary = atob(file)
-    const array = new Uint8Array(binary.length)
-    for (let i = 0; i < binary.length; i++) {
-      array[i] = binary.charCodeAt(i)
+    if (!file || !filename) {
+      return NextResponse.json({ error: 'Fichier ou nom manquant' }, { status: 400 })
     }
+
+    const arrayBuffer = await file.arrayBuffer()
+    const buffer = new Uint8Array(arrayBuffer)
 
     const { error } = await supabase.storage
       .from('rapports-visite')
-      .upload(filename, array, {
-        contentType: mimetype,
+      .upload(filename, buffer, {
+        contentType: 'application/pdf',
         upsert: true,
       })
 
@@ -30,7 +32,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    console.error('Erreur API save-pdf :', err)
     return NextResponse.json({ error: err.message || 'Erreur serveur' }, { status: 500 })
   }
 }
