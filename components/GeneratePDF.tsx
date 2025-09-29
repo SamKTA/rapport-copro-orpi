@@ -233,15 +233,14 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
 
       // Enregistrement Supabase
       const fileName = `rapport_${visitData.address.replace(/\s+/g, '_')}_${visitData.date}.pdf`
+      const formData = new FormData()
+      formData.append('filename',fileName)
+      formData.append('file', new Blob([pdfBytes], { type: 'application/pdf' }), fileName)
+
       await fetch('/api/save-pdf', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: fileName,
-          file: base64,
-          mimetype: 'application/pdf',
-        }),
-      })
+        body: formData,
+        })
 
       // Téléchargement local
       const link = document.createElement('a')
