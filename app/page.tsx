@@ -24,6 +24,7 @@ export default function Home() {
     personnesPresentes: ''
   })
 
+  const [photoCopro, setPhotoCopro] = useState<File | null>(null)
   const [observations, setObservations] = useState<Observation[]>([])
   const [signatureData, setSignatureData] = useState<string | undefined>(undefined)
 
@@ -33,6 +34,17 @@ export default function Home() {
         <div className="bg-white rounded-xl shadow p-6 space-y-4">
           <h2 className="text-xl font-bold text-gray-800">🗓️ Informations de visite</h2>
           <VisitForm visitData={visitData} setVisitData={setVisitData} />
+        </div>
+
+        {/* ✅ CHAMP PHOTO COPRO AJOUTÉ ICI */}
+        <div className="bg-white rounded-xl shadow p-6 space-y-4">
+          <h2 className="text-xl font-bold text-gray-800">📷 Photo de la copropriété</h2>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setPhotoCopro(e.target.files?.[0] || null)}
+            className="block"
+          />
         </div>
 
         <div className="bg-white rounded-xl shadow p-6 space-y-4">
@@ -53,6 +65,7 @@ export default function Home() {
             visitData={visitData}
             observations={observations}
             signatureDataURL={signatureData}
+            photoCopro={photoCopro} // ✅ transmis ici
           />
         </div>
       </div>
