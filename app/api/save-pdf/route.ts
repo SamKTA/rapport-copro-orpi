@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
@@ -6,22 +6,22 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const formData = await req.formData()
-    const file = formData.get('file') as Blob
+    const file = formData.get('file') as File
     const filename = formData.get('filename') as string
 
     if (!file || !filename) {
-      return NextResponse.json({ error: 'Fichier ou nom manquant' }, { status: 400 })
+      return NextResponse.json({ error: 'Missing file or filename' }, { status: 400 })
     }
 
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = new Uint8Array(arrayBuffer)
+    const uint8Array = new Uint8Array(arrayBuffer)
 
     const { error } = await supabase.storage
       .from('rapports-visite')
-      .upload(filename, buffer, {
+      .upload(filename, uint8Array, {
         contentType: 'application/pdf',
         upsert: true,
       })
@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: any) {
+    console.error('Erreur API save-pdf :', err)
     return NextResponse.json({ error: err.message || 'Erreur serveur' }, { status: 500 })
   }
 }
