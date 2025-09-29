@@ -50,11 +50,11 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export default function GeneratePDF({ visitData, observations, signatureDataURL }: Props) {
   const [loading, setLoading] = useState(false)
-  const [confirmation, setConfirmation] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
 
   const handleGeneratePDF = async () => {
     setLoading(true)
-    setConfirmation(null)
+    setSuccess(false)
 
     try {
       const pdfDoc = await PDFDocument.create()
@@ -207,7 +207,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       }
 
       const pdfBytes = await pdfDoc.save()
-      const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       console.log("Taille du PDF (Mo) :", (pdfBytes.length / (1024 * 1024)).toFixed(2))
 
       const base64 = await blobToBase64(blob)
@@ -219,7 +219,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           ? 'dsaintgermain@orpi.com'
           : 'skita@orpi.com'
 
-      // 📤 Envoi par e-mail
+      // Envoi de l'e-mail
       await fetch('/api/send-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -231,24 +231,25 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }),
       })
 
-      // 📦 Upload Supabase
+      // Enregistrement Supabase
+      const fileName = `rapport_${visitData.address.replace(/\s+/g, '_')}_${visitData.date}.pdf`
       await fetch('/api/save-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: `rapport-${visitData.date}-${visitData.address}.pdf`,
+          filename: fileName,
           file: base64,
           mimetype: 'application/pdf',
         }),
       })
 
-      // 💾 Téléchargement local
+      // Téléchargement local
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
       link.click()
 
-      setConfirmation('✅ Rapport envoyé par e-mail et stocké avec succès.')
+      setSuccess(true)
     } catch (err: any) {
       console.error('Erreur détaillée :', err)
       alert(`Erreur lors de la génération : ${err.message || 'voir console'}`)
@@ -266,9 +267,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       >
         {loading ? 'Génération en cours...' : '📄 Générer le rapport PDF'}
       </button>
-
-      {confirmation && (
-        <p className="text-green-600 font-medium">{confirmation}</p>
+      {success && (
+        <p className="text-green-600 font-medium">
+          ✅ Rapport généré, envoyé par email et sauvegardé sur Supabase
+        </p>
       )}
     </div>
   )
