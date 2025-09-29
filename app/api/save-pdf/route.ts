@@ -3,27 +3,24 @@ import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Service role key côté serveur uniquement
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData()
-    const file = formData.get('file') as File
+    const { filename, file, mimetype } = await req.json()
 
-    if (!file) {
-      return NextResponse.json({ error: 'Fichier manquant' }, { status: 400 })
+    // ✅ Convertir base64 en Uint8Array (manuellement sans Buffer)
+    const binary = atob(file)
+    const array = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) {
+      array[i] = binary.charCodeAt(i)
     }
-
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = new Uint8Array(arrayBuffer)
-
-    const filename = `rapport-${Date.now()}.pdf`
 
     const { error } = await supabase.storage
       .from('rapports-visite')
-      .upload(filename, buffer, {
-        contentType: 'application/pdf',
+      .upload(filename, array, {
+        contentType: mimetype,
         upsert: true,
       })
 
