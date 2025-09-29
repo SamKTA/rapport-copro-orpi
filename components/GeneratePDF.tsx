@@ -1,4 +1,4 @@
-"use client"
+'use client'
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { useState } from 'react'
@@ -50,9 +50,11 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export default function GeneratePDF({ visitData, observations, signatureDataURL }: Props) {
   const [loading, setLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const handleGeneratePDF = async () => {
     setLoading(true)
+    setSuccessMessage('')
 
     try {
       const pdfDoc = await PDFDocument.create()
@@ -63,7 +65,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       const { height } = page.getSize()
       let y = height - 50
 
-      // 🧾 Page d’en-tête
+      // 🧾 Page d'infos
       page.drawText('Rapport de Visite', {
         x: 50,
         y,
@@ -95,6 +97,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       // 🔍 Observations
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
+
         page = pdfDoc.addPage(pageSize)
         y = height - 50
 
@@ -127,6 +130,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
 
         for (const photo of obs.photos || []) {
           const imageBitmap = await createImageBitmap(photo)
+
           const canvas = document.createElement('canvas')
           const ctx = canvas.getContext('2d')!
 
@@ -205,14 +209,12 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         })
       }
 
-      // ✅ Finalisation
+      // 🧠 Finalisation
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const base64 = await blobToBase64(blob)
 
-      console.log("Taille du PDF (Mo) :", (pdfBytes.length / (1024 * 1024)).toFixed(2))
-
-      // 📩 Envoi email
+      // 📨 Envoi email
       const recipient =
         visitData.redacteur === 'Elodie BONNAY'
           ? 'ebonnay@orpi.com'
@@ -233,13 +235,17 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }),
       })
 
-      // ☁️ Envoi à Supabase Storage
-      const formData = new FormData()
-      formData.append('file', blob, `rapport-${Date.now()}.pdf`)
-
+      // ☁️ Upload Supabase
       await fetch('/api/save-pdf', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: `rapport-${visitData.date}-${visitData.address}.pdf`.replace(/\s/g, '-'),
+          file: base64,
+          mimetype: 'application/pdf',
+        }),
       })
 
       // 💾 Téléchargement local
@@ -247,6 +253,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
       link.click()
+
+      // ✅ Message confirmation
+      setSuccessMessage('✅ Rapport généré, envoyé et sauvegardé avec succès !')
+      setTimeout(() => setSuccessMessage(''), 10000)
     } catch (err: any) {
       console.error('Erreur détaillée :', err)
       alert(`Erreur lors de la génération : ${err.message || 'voir console'}`)
@@ -264,6 +274,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       >
         {loading ? 'Génération en cours...' : '📄 Générer le rapport PDF'}
       </button>
+
+      {successMessage && (
+        <p className="mt-4 text-green-600 font-medium">{successMessage}</p>
+      )}
     </div>
   )
 }
