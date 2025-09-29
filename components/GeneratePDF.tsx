@@ -48,6 +48,13 @@ function blobToBase64(blob: Blob): Promise<string> {
   })
 }
 
+function cleanFileName(name: string) {
+  return name
+    .normalize('NFD') // enleve accents
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets
+}
+
 export default function GeneratePDF({ visitData, observations, signatureDataURL }: Props) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -230,13 +237,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           pdfBase64: base64,
         }),
       })
-
-      function cleanFileName(name: string) {
-        return name
-          .normalize('NFD') // enleve accents
-          .replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets
-      }
       
       // Enregistrement Supabase
       const fileName = `rapport_${cleanFileName(visitData.address)}_${visitData.date}.pdf`
