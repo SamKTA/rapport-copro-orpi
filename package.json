@@ -22,4 +22,15 @@
   "@types/react": "^18.0.28",
   "@types/node": "^18.0.0"
   }
+  {
+  "name": "rapport-copro-orpi",
+  "version": "1.0.0",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.5"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  }
 }
