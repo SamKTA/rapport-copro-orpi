@@ -2,7 +2,6 @@
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { useState } from 'react'
-import { supabase } from '../lib/supabaseClient' // ✅ Import Supabase
 
 interface Observation {
   type: string
@@ -28,7 +27,7 @@ interface Props {
 function sanitizeText(text: string) {
   return text
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\x00-\x7F]/g, '')
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
@@ -64,6 +63,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       const { height } = page.getSize()
       let y = height - 50
 
+      // 🧾 Page d’en-tête
       page.drawText('Rapport de Visite', {
         x: 50,
         y,
@@ -92,9 +92,9 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       addLine("Code immeuble :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
+      // 🔍 Observations
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
-
         page = pdfDoc.addPage(pageSize)
         y = height - 50
 
@@ -127,7 +127,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
 
         for (const photo of obs.photos || []) {
           const imageBitmap = await createImageBitmap(photo)
-
           const canvas = document.createElement('canvas')
           const ctx = canvas.getContext('2d')!
 
@@ -163,6 +162,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }
       }
 
+      // ✍️ Signature
       page = pdfDoc.addPage(pageSize)
       y = height - 80
 
@@ -205,12 +205,14 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         })
       }
 
+      // ✅ Finalisation
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
-      console.log("Taille du PDF (Mo) :", (pdfBytes.length / (1024 * 1024)).toFixed(2))
-
       const base64 = await blobToBase64(blob)
 
+      console.log("Taille du PDF (Mo) :", (pdfBytes.length / (1024 * 1024)).toFixed(2))
+
+      // 📩 Envoi email
       const recipient =
         visitData.redacteur === 'Elodie BONNAY'
           ? 'ebonnay@orpi.com'
@@ -218,36 +220,29 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           ? 'dsaintgermain@orpi.com'
           : 'skita@orpi.com'
 
-      const formData = new FormData()
-      formData.append('file', blob, `rapport-${visitData.address.replace(/\s+/g, '_')}-${visitData.date}.pdf`)
-      
       await fetch('/api/send-pdf', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          filename: `rapport-${visitData.address.replace(/\s+/g, '_')}-${visitData.date}.pdf`,
-          file: base64,
-          mimetype: 'application/pdf',
+          to: recipient,
+          address: visitData.address,
+          date: visitData.date,
+          pdfBase64: base64,
         }),
       })
 
-      // ✅ UPLOAD SUPABASE
-      const fileName = `rapport-${visitData.date}-${Date.now()}.pdf`
-      const { data, error } = await supabase.storage
-        .from('rapports-visite')
-        .upload(fileName, blob, {
-          contentType: 'application/pdf',
-          upsert: true,
-        })
+      // ☁️ Envoi à Supabase Storage
+      const formData = new FormData()
+      formData.append('file', blob, `rapport-${Date.now()}.pdf`)
 
-      if (error) {
-        console.error("❌ Erreur Supabase Storage:", error)
-      } else {
-        console.log("✅ Rapport stocké sur Supabase:", data)
-      }
+      await fetch('/api/save-pdf', {
+        method: 'POST',
+        body: formData,
+      })
 
+      // 💾 Téléchargement local
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
