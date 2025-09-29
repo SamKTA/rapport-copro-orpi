@@ -50,11 +50,11 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export default function GeneratePDF({ visitData, observations, signatureDataURL }: Props) {
   const [loading, setLoading] = useState(false)
-  const [successMessage, setSuccessMessage] = useState('')
+  const [confirmation, setConfirmation] = useState<string | null>(null)
 
   const handleGeneratePDF = async () => {
     setLoading(true)
-    setSuccessMessage('')
+    setConfirmation(null)
 
     try {
       const pdfDoc = await PDFDocument.create()
@@ -65,7 +65,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       const { height } = page.getSize()
       let y = height - 50
 
-      // 🧾 Page d'infos
       page.drawText('Rapport de Visite', {
         x: 50,
         y,
@@ -94,7 +93,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       addLine("Code immeuble :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // 🔍 Observations
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
 
@@ -166,7 +164,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }
       }
 
-      // ✍️ Signature
       page = pdfDoc.addPage(pageSize)
       y = height - 80
 
@@ -209,12 +206,12 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         })
       }
 
-      // 🧠 Finalisation
       const pdfBytes = await pdfDoc.save()
-      const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+      console.log("Taille du PDF (Mo) :", (pdfBytes.length / (1024 * 1024)).toFixed(2))
+
       const base64 = await blobToBase64(blob)
 
-      // 📨 Envoi email
       const recipient =
         visitData.redacteur === 'Elodie BONNAY'
           ? 'ebonnay@orpi.com'
@@ -222,11 +219,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           ? 'dsaintgermain@orpi.com'
           : 'skita@orpi.com'
 
+      // 📤 Envoi par e-mail
       await fetch('/api/send-pdf', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: recipient,
           address: visitData.address,
@@ -235,14 +231,12 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }),
       })
 
-      // ☁️ Upload Supabase
+      // 📦 Upload Supabase
       await fetch('/api/save-pdf', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: `rapport-${visitData.date}-${visitData.address}.pdf`.replace(/\s/g, '-'),
+          filename: `rapport-${visitData.date}-${visitData.address}.pdf`,
           file: base64,
           mimetype: 'application/pdf',
         }),
@@ -254,9 +248,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       link.download = 'rapport-visite.pdf'
       link.click()
 
-      // ✅ Message confirmation
-      setSuccessMessage('✅ Rapport généré, envoyé et sauvegardé avec succès !')
-      setTimeout(() => setSuccessMessage(''), 10000)
+      setConfirmation('✅ Rapport envoyé par e-mail et stocké avec succès.')
     } catch (err: any) {
       console.error('Erreur détaillée :', err)
       alert(`Erreur lors de la génération : ${err.message || 'voir console'}`)
@@ -266,7 +258,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
   }
 
   return (
-    <div className="text-center mt-10">
+    <div className="text-center mt-10 space-y-4">
       <button
         onClick={handleGeneratePDF}
         disabled={loading}
@@ -275,8 +267,8 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         {loading ? 'Génération en cours...' : '📄 Générer le rapport PDF'}
       </button>
 
-      {successMessage && (
-        <p className="mt-4 text-green-600 font-medium">{successMessage}</p>
+      {confirmation && (
+        <p className="text-green-600 font-medium">{confirmation}</p>
       )}
     </div>
   )
