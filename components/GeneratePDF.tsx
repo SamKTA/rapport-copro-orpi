@@ -22,7 +22,7 @@ interface Props {
   }
   observations: Observation[]
   signatureDataURL?: string
-  photoCopro?: File | null // ✅ Ajouté pour corriger l'erreur
+  photoCopro?: File | null
 }
 
 function sanitizeText(text: string) {
@@ -51,18 +51,17 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 function cleanFileName(name: string) {
   return name
-    .normalize('NFD') // enleve accents
+    .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets
+    .replace(/[^a-zA-Z0-9-_]/g, '_')
 }
 
 export default function GeneratePDF({
   visitData,
   observations,
   signatureDataURL,
-  photoCopro, // ✅ on ajoute cette ligne ici
+  photoCopro,
 }: Props) {
-  
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
@@ -87,6 +86,38 @@ export default function GeneratePDF({
         color: rgb(0.9, 0, 0),
       })
       y -= 40
+
+      // ✅ Ajout de la photo de copropriété en première page
+      if (photoCopro) {
+        const imageBitmap = await createImageBitmap(photoCopro)
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')!
+
+        const maxWidth = 400
+        const scale = maxWidth / imageBitmap.width
+        canvas.width = maxWidth
+        canvas.height = imageBitmap.height * scale
+
+        ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height)
+
+        const compressedBlob: Blob = await new Promise(resolve =>
+          canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.6)
+        )
+
+        const arrayBuffer = await compressedBlob.arrayBuffer()
+        const uint8Array = new Uint8Array(arrayBuffer)
+        const img = await pdfDoc.embedJpg(uint8Array)
+        const scaled = img.scale(0.7)
+
+        page.drawImage(img, {
+          x: 50,
+          y: y - scaled.height,
+          width: scaled.width,
+          height: scaled.height,
+        })
+
+        y -= scaled.height + 30
+      }
 
       const addLine = (label: string, value: string) => {
         page.drawText(`${sanitizeText(label)} ${sanitizeText(value)}`, {
@@ -233,7 +264,6 @@ export default function GeneratePDF({
           ? 'dsaintgermain@orpi.com'
           : 'skita@orpi.com'
 
-      // Envoi de l'e-mail
       await fetch('/api/send-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -244,19 +274,17 @@ export default function GeneratePDF({
           pdfBase64: base64,
         }),
       })
-      
-      // Enregistrement Supabase
+
       const fileName = `rapport_${cleanFileName(visitData.address)}_${visitData.date}.pdf`
       const formData = new FormData()
-      formData.append('filename',fileName)
+      formData.append('filename', fileName)
       formData.append('file', new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }), fileName)
 
       await fetch('/api/save-pdf', {
         method: 'POST',
         body: formData,
-        })
+      })
 
-      // Téléchargement local
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
