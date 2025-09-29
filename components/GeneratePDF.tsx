@@ -218,6 +218,9 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           ? 'dsaintgermain@orpi.com'
           : 'skita@orpi.com'
 
+      const formData = new FormData()
+      formData.append('file', blob, `rapport-${visitData.address.replace(/\s+/g, '_')}-${visitData.date}.pdf`)
+      
       await fetch('/api/send-pdf', {
         method: 'POST',
         headers: {
