@@ -231,8 +231,15 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
         }),
       })
 
+      function cleanFileName(name: string) {
+        return name
+          .normalize('NFD') // enleve accents
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets
+      }
+      
       // Enregistrement Supabase
-      const fileName = `rapport_${visitData.address.replace(/\s+/g, '_')}_${visitData.date}.pdf`
+      const fileName = `rapport_${cleanFileName(visitData.address)}_${visitData.date}.pdf`
       const formData = new FormData()
       formData.append('filename',fileName)
       formData.append('file', new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }), fileName)
