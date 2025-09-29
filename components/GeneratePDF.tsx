@@ -2,6 +2,7 @@
 
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { useState } from 'react'
+import { supabase } from '../lib/supabaseClient' // ✅ Import Supabase
 
 interface Observation {
   type: string
@@ -27,7 +28,7 @@ interface Props {
 function sanitizeText(text: string) {
   return text
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .replace(/[^\x00-\x7F]/g, '')
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
@@ -229,6 +230,21 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           pdfBase64: base64,
         }),
       })
+
+      // ✅ UPLOAD SUPABASE
+      const fileName = `rapport-${visitData.date}-${Date.now()}.pdf`
+      const { data, error } = await supabase.storage
+        .from('rapports-visite')
+        .upload(fileName, blob, {
+          contentType: 'application/pdf',
+          upsert: true,
+        })
+
+      if (error) {
+        console.error("❌ Erreur Supabase Storage:", error)
+      } else {
+        console.log("✅ Rapport stocké sur Supabase:", data)
+      }
 
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
