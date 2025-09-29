@@ -224,10 +224,9 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          to: recipient,
-          address: visitData.address,
-          date: visitData.date,
-          pdfBase64: base64,
+          filename: `rapport-visite-${Date.now()}.pdf`,
+          file: base64, // contenu en base64 du PDF
+          mimetype: 'application/pdf',
         }),
       })
 
