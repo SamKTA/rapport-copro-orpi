@@ -235,7 +235,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL 
       const fileName = `rapport_${visitData.address.replace(/\s+/g, '_')}_${visitData.date}.pdf`
       const formData = new FormData()
       formData.append('filename',fileName)
-      formData.append('file', new Blob([pdfBytes.buffer], { type: 'application/pdf' }), fileName)
+      formData.append('file', new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' }), fileName)
 
       await fetch('/api/save-pdf', {
         method: 'POST',
