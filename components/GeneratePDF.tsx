@@ -51,9 +51,9 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 function cleanFileName(name: string) {
   return name
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .replace(/[^a-zA-Z0-9-_]/g, '_')
+    .normalize('NFD') // enlève accents
+    .replace(/[\u0300-\u036f]/g, '') // supprime diacritiques
+    .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets et underscores
 }
 
 export default function GeneratePDF({ visitData, observations, signatureDataURL, photoCopro }: Props) {
