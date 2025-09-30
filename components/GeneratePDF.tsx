@@ -150,25 +150,48 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         y = height - 50
 
         // En-tête ORPI Adimmo
-        page.drawRectangle({ x: 30, y: height - 55, width: 100, height: 25, color: rgb(0.9, 0, 0) })
-        page.drawText('ORPI Adimmo', {
-          x: 40,
-          y: height - 40,
-          size: 14,
-          font: fontBold,
-          color: rgb(1, 1, 1),
+        const orpiWidth = 120
+        const orpiHeight = 25
+        
+        page.drawRectangle({
+          x: 50,
+          y: height - 50,
+          width: orpiWidth,
+          height: orpiHeight,
+          color: rgb(1, 0, 0),
         })
 
-        // Bannière OBSERVATIONS
-        page.drawRectangle({ x: 40, y: y, width: 500, height: 25, color: rgb(0.9, 0, 0) })
-        page.drawText('OBSERVATIONS', {
-          x: 220,
-          y: y + 5,
-          size: 14,
+        page.drawText('ORPI Adimmo', {
+          x: 50 + (orpiWidth - font.widthOfTextAtSize('ORPI Adimmo', 12)) / 2,
+          y: height - 50 + (orpiHeight - 12) / 2,
+          size: 12,
           font: fontBold,
           color: rgb(1, 1, 1),
         })
-        y -= 40
+      
+        // Bannière OBSERVATIONS
+        const bannerWidth = 500
+        const bannerHeight = 30
+
+        page.drawRectangle({
+          x: 50,
+          y,
+          width: bannerWidth,
+          height: bannerHeight,
+          color: rgb(1, 0, 0),
+        })
+
+        const bannerText = 'OBSERVATIONS'
+        const textSize = 14
+        const textWidth = fontBold.widthOfTextAtSize(bannerText, textSize)
+
+        page.drawText(bannerText, {
+          x: 50 + (bannerWidth - textWidth) / 2,
+          y: y + (bannerHeight - textSize) / 2,
+          size: textSize,
+          font: fontBold,
+          color: rgb(1, 1, 1),
+        })
 
         const type = sanitizeText(obs.type)
         const description = sanitizeText(obs.description)
