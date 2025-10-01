@@ -29,8 +29,11 @@ export default function ObservationForm({ observations, setObservations }: Props
 
   const handlePhotos = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return
-    const files = Array.from(e.target.files).slice(0, 3)
-    setForm({ ...form, photos: files })
+    const newFiles = Array.from(e.target.files)
+
+    // 👉 Ajout sans écraser, limité à 3 photos
+    const combinedPhotos = [...form.photos, ...newFiles].slice(0, 3)
+    setForm({ ...form, photos: combinedPhotos })
   }
 
   const handleAdd = (e: FormEvent) => {
@@ -86,6 +89,18 @@ export default function ObservationForm({ observations, setObservations }: Props
           onChange={handlePhotos}
           className="w-full border border-gray-300 p-2 rounded-md"
         />
+        {form.photos.length > 0 && (
+          <div className="flex gap-2 mt-2 flex-wrap">
+            {form.photos.map((photo, i) => (
+              <img
+                key={i}
+                src={URL.createObjectURL(photo)}
+                alt={`preview-${i}`}
+                className="h-20 rounded"
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <button
