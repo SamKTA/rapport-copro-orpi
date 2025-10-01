@@ -27,9 +27,9 @@ interface Props {
 
 function sanitizeText(text: string) {
   return text
-    .normalize('NFD') // décompose les caractères accentués
-    .replace(/[\u0300-\u036f]/g, '') // supprime les marques diacritiques
-    .replace(/[^\x00-\x7F]/g, '') // supprime les caractères non-ASCII
+    .normalize('NFD')
+    .replace(/\u0300-\u036f/g, '')
+    .replace(/[^\x00-\x7F]/g, '')
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[…]/g, '...')
@@ -51,9 +51,9 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 function cleanFileName(name: string) {
   return name
-    .normalize('NFD') // enlève accents
-    .replace(/[\u0300-\u036f]/g, '') // supprime diacritiques
-    .replace(/[^a-zA-Z0-9-_]/g, '_') // garde uniquement lettres, chiffres, tirets et underscores
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9-_]/g, '_')
 }
 
 export default function GeneratePDF({ visitData, observations, signatureDataURL, photoCopro }: Props) {
@@ -74,10 +74,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       let y = height - 50
 
       // En-tête ORPI Adimmo
-      page.drawRectangle({ x: 30, y: height - 55, width: 100, height: 25, color: rgb(0.9, 0, 0) })
+      page.drawRectangle({ x: 25, y: height - 50, width: 140, height: 30, color: rgb(1, 0, 0) })
       page.drawText('ORPI Adimmo', {
-        x: 40,
-        y: height - 40,
+        x: 35,
+        y: height - 42,
         size: 14,
         font: fontBold,
         color: rgb(1, 1, 1),
@@ -111,7 +111,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       addLine("Code :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // 📸 Photo de la copro
       if (photoCopro) {
         const imageBitmap = await createImageBitmap(photoCopro)
         const canvas = document.createElement('canvas')
@@ -143,55 +142,36 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         y -= scaled.height + 20
       }
 
-      // 📍 Observations
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
         page = pdfDoc.addPage(pageSize)
         y = height - 50
 
-        // En-tête ORPI Adimmo
-        const orpiWidth = 120
-        const orpiHeight = 25
-        
-        page.drawRectangle({
-          x: 50,
-          y: height - 50,
-          width: orpiWidth,
-          height: orpiHeight,
-          color: rgb(1, 0, 0),
-        })
-
+        // ORPI Adimmo
+        page.drawRectangle({ x: 25, y: height - 50, width: 140, height: 30, color: rgb(1, 0, 0) })
         page.drawText('ORPI Adimmo', {
-          x: 50 + (orpiWidth - font.widthOfTextAtSize('ORPI Adimmo', 12)) / 2,
-          y: height - 50 + (orpiHeight - 12) / 2,
-          size: 12,
+          x: 35,
+          y: height - 42,
+          size: 14,
           font: fontBold,
           color: rgb(1, 1, 1),
         })
-      
-        // Bannière OBSERVATIONS
-        const bannerWidth = 500
-        const bannerHeight = 30
 
-        page.drawRectangle({
-          x: 50,
-          y,
-          width: bannerWidth,
-          height: bannerHeight,
-          color: rgb(1, 0, 0),
-        })
-
-        const bannerText = 'OBSERVATIONS'
+        // OBSERVATIONS bandeau
+        const bannerY = y
+        page.drawRectangle({ x: 50, y: bannerY, width: 500, height: 30, color: rgb(1, 0, 0) })
+        const text = 'OBSERVATIONS'
         const textSize = 14
-        const textWidth = fontBold.widthOfTextAtSize(bannerText, textSize)
-
-        page.drawText(bannerText, {
-          x: 50 + (bannerWidth - textWidth) / 2,
-          y: y + (bannerHeight - textSize) / 2,
+        const textWidth = fontBold.widthOfTextAtSize(text, textSize)
+        page.drawText(text, {
+          x: 50 + (500 - textWidth) / 2,
+          y: bannerY + 8,
           size: textSize,
           font: fontBold,
           color: rgb(1, 1, 1),
         })
+
+        y -= 50
 
         const type = sanitizeText(obs.type)
         const description = sanitizeText(obs.description)
@@ -258,7 +238,6 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         }
       }
 
-      // ✅ Dernière page - Validation
       page = pdfDoc.addPage(pageSize)
       y = height - 80
 
