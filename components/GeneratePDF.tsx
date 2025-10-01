@@ -28,7 +28,7 @@ interface Props {
 function sanitizeText(text: string) {
   return text
     .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\x00-\x7F]/g, '')
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
