@@ -227,7 +227,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       }
 
       const lastPage = pdfDoc.addPage(pageSize)
-      let y = lastPage.getHeight() - 80
+      y = lastPage.getHeight() - 80
       lastPage.drawText('Validation du rapport', {
         x: 50,
         y,
