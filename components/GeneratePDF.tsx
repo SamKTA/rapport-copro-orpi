@@ -243,16 +243,14 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       // --- Upload vers Supabase ---
       const pdfBytes = await pdfDoc.save()
 
-      // Crée un vrai Blob compatible navigateur (sans cast)
-      const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' })
+      // ✅ Correction typage Blob
+      const pdfBlob = new Blob([pdfBytes.buffer], { type: 'application/pdf' })
       
-      // FormData pour upload vers Supabase
       const fileName = `rapport_${cleanFileName(visitData.address)}_${visitData.date}.pdf`
       const formData = new FormData()
       formData.append('filename', fileName)
       formData.append('file', pdfBlob, fileName)
       
-      // Upload vers ton API /api/save-pdf
       const uploadRes = await fetch('/api/save-pdf', {
         method: 'POST',
         body: formData,
