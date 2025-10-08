@@ -27,6 +27,7 @@ interface Props {
 
 function sanitizeText(text: string) {
   return text
+    .replace(/\r?\n|\r/g, ' ') // supprime les retours à la ligne (\n, \r)
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\x00-\x7F]/g, '')
