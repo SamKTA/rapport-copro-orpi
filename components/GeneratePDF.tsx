@@ -103,15 +103,27 @@ export default function GeneratePDF({
       })
       y -= 40
 
+      const addWrappedText = (text: string, x: number, y: number, maxWidth: number, font: any, size: number) => {
+        const words = text.split(" ")
+        let line = ""
+        let offsetY = 0
+        for (let n = 0; n < words.length; n++) {
+          const testLine = line + words[n] + " "
+          const testWidth = font.widthOfTextAtSize(testLine, size)
+          if (testWidth > maxWidth && n > 0) {
+            page.drawText(line.trim(), { x, y: y - offsetY, size, font })
+            line = words[n] + " "
+            offsetY += 14
+          } else {
+            line = testLine
+          }
+        }
+        if (line.length > 0) page.drawText(line.trim(), { x, y: y - offsetY, size, font })
+        return y - offsetY - 16
+      }
+
       const addLine = (label: string, value: string) => {
-        page.drawText(`${sanitizeText(label)} ${sanitizeText(value)}`, {
-          x: 50,
-          y,
-          size: 12,
-          font,
-          color: rgb(0, 0, 0),
-        })
-        y -= 20
+        y = addWrappedText(`${sanitizeText(label)} ${sanitizeText(value)}`, 50, y, 480, font, 12)
       }
 
       // Infos générales
@@ -123,39 +135,24 @@ export default function GeneratePDF({
       addLine("Code :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // Espace avant photo
-      y -= 80
-      if (y < 200) {
-        page = pdfDoc.addPage(pageSize)
-        y = page.getHeight() - 100
-      }
+      y -= 60
 
-      // Photo principale
+      // Photo copro
       if (photoCopro) {
-        const imageBitmap = await createImageBitmap(photoCopro)
-        const canvas = document.createElement("canvas")
-        const ctx = canvas.getContext("2d")!
-        const maxWidth = 450
-        const scale = Math.min(maxWidth / imageBitmap.width, 0.6)
-        canvas.width = imageBitmap.width * scale
-        canvas.height = imageBitmap.height * scale
-        ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height)
-
-        const compressedBlob: Blob = await new Promise((resolve) =>
-          canvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.85)
-        )
-        const arrayBuffer = await compressedBlob.arrayBuffer()
-        const uint8Array = new Uint8Array(arrayBuffer)
-        const img = await pdfDoc.embedJpg(uint8Array)
-        const scaled = img.scale(0.6)
-
+        const imgBytes = await photoCopro.arrayBuffer()
+        let img
+        if (photoCopro.type.includes("png") || photoCopro.name.toLowerCase().endsWith(".png")) {
+          img = await pdfDoc.embedPng(new Uint8Array(imgBytes))
+        } else {
+          img = await pdfDoc.embedJpg(new Uint8Array(imgBytes))
+        }
+        const scaled = img.scale(0.5)
         if (y - scaled.height < 50) {
           page = pdfDoc.addPage(pageSize)
           y = page.getHeight() - 100
         }
-
         page.drawImage(img, {
-          x: 50,
+          x: (page.getWidth() - scaled.width) / 2,
           y: y - scaled.height,
           width: scaled.width,
           height: scaled.height,
@@ -167,16 +164,14 @@ export default function GeneratePDF({
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
         page = pdfDoc.addPage(pageSize)
-        y = page.getHeight() - 50
+        y = page.getHeight() - 60
 
-        // Header observation
-        const orpiWidth = 120
-        const orpiHeight = 25
+        // Bandeau
         page.drawRectangle({
           x: 50,
           y: y + 10,
-          width: orpiWidth,
-          height: orpiHeight,
+          width: 120,
+          height: 25,
           color: rgb(1, 0, 0),
         })
         page.drawText("ORPI Adimmo", {
@@ -188,33 +183,26 @@ export default function GeneratePDF({
         })
 
         const bannerText = "OBSERVATIONS"
-        const textSize = 14
         const bannerHeight = 30
         const bannerWidth = 500
         y -= 20
-        page.drawRectangle({
-          x: 50,
-          y: y,
-          width: bannerWidth,
-          height: bannerHeight,
-          color: rgb(1, 0, 0),
-        })
+        page.drawRectangle({ x: 50, y: y, width: bannerWidth, height: bannerHeight, color: rgb(1, 0, 0) })
         page.drawText(bannerText, {
-          x: 50 + (bannerWidth - fontBold.widthOfTextAtSize(bannerText, textSize)) / 2,
+          x: 50 + (bannerWidth - fontBold.widthOfTextAtSize(bannerText, 14)) / 2,
           y: y + 8,
-          size: textSize,
+          size: 14,
           font: fontBold,
           color: rgb(1, 1, 1),
         })
-        y -= bannerHeight + 20
+        y -= bannerHeight + 25
 
-        // Texte
         const type = sanitizeText(obs.type)
         const description = sanitizeText(obs.description)
         const action = sanitizeText(obs.action || "")
         const isPositive = type.toLowerCase().includes("positive")
         const titleColor = isPositive ? rgb(0, 0.6, 0) : rgb(0.8, 0, 0)
 
+        // Texte
         page.drawText(`Observation ${i + 1} - ${type}`, {
           x: 50,
           y,
@@ -226,41 +214,27 @@ export default function GeneratePDF({
 
         page.drawText("Description :", { x: 50, y, size: 14, font: fontBold })
         y -= 20
-        const lines = description.split(/\r?\n/)
-        for (const line of lines) {
-          page.drawText(line, { x: 50, y, size: 12, font })
-          y -= 15
-        }
+        y = addWrappedText(description, 50, y, 480, font, 12)
 
         if (action) {
           y -= 10
           page.drawText("Action à mener :", { x: 50, y, size: 14, font: fontBold })
           y -= 20
-          const actionLines = action.split(/\r?\n/)
-          for (const line of actionLines) {
-            page.drawText(line, { x: 50, y, size: 12, font })
-            y -= 15
-          }
+          y = addWrappedText(action, 50, y, 480, font, 12)
         }
 
         // Photos
         if (obs.photos?.length) {
-          y -= 30 // espace avant photos
+          y -= 30
           const photos = obs.photos
-          const count = photos.length
-
           const embedImage = async (photo: File) => {
             const imgBytes = await photo.arrayBuffer()
-            let img
-            if (photo.type.includes("png") || photo.name.toLowerCase().endsWith(".png")) {
-              img = await pdfDoc.embedPng(new Uint8Array(imgBytes))
-            } else {
-              img = await pdfDoc.embedJpg(new Uint8Array(imgBytes))
-            }
-            return img
+            return photo.type.includes("png") || photo.name.toLowerCase().endsWith(".png")
+              ? await pdfDoc.embedPng(new Uint8Array(imgBytes))
+              : await pdfDoc.embedJpg(new Uint8Array(imgBytes))
           }
 
-          if (count === 1) {
+          if (photos.length === 1) {
             const img = await embedImage(photos[0])
             const scaled = img.scale(0.5)
             page.drawImage(img, {
@@ -269,48 +243,56 @@ export default function GeneratePDF({
               width: scaled.width,
               height: scaled.height,
             })
-          } else if (count === 2) {
-            const spacing = 20
-            const totalWidth = 2 * 200 + spacing
-            const startX = (page.getWidth() - totalWidth) / 2
-            for (let p = 0; p < 2; p++) {
-              const img = await embedImage(photos[p])
-              const scaled = img.scale(0.35)
-              const x = startX + p * (scaled.width + spacing)
-              page.drawImage(img, {
-                x,
-                y: y - scaled.height,
-                width: scaled.width,
-                height: scaled.height,
-              })
+          } else if (photos.length === 2) {
+            const spacing = 25
+            const scaledImages = []
+            for (const p of photos) {
+              const img = await embedImage(p)
+              scaledImages.push(img.scale(0.4))
             }
-          } else if (count === 3) {
-            // 3 photos : 1 centrée, 2 côte à côte
+            const totalWidth = scaledImages[0].width + scaledImages[1].width + spacing
+            let startX = (page.getWidth() - totalWidth) / 2
+            for (let i = 0; i < 2; i++) {
+              const img = scaledImages[i]
+              page.drawImage(img, {
+                x: startX,
+                y: y - img.height,
+                width: img.width,
+                height: img.height,
+              })
+              startX += img.width + spacing
+            }
+          } else if (photos.length === 3) {
             const img1 = await embedImage(photos[0])
-            const scaled1 = img1.scale(0.4)
+            const scaled1 = img1.scale(0.45)
             page.drawImage(img1, {
               x: (page.getWidth() - scaled1.width) / 2,
               y: y - scaled1.height,
               width: scaled1.width,
               height: scaled1.height,
             })
+            y -= scaled1.height + 25
 
-            y -= scaled1.height + 30
+            const img2 = await embedImage(photos[1])
+            const img3 = await embedImage(photos[2])
+            const scaled2 = img2.scale(0.35)
+            const scaled3 = img3.scale(0.35)
             const spacing = 30
-            const totalWidth = 2 * 180 + spacing
-            const startX = (page.getWidth() - totalWidth) / 2
-
-            for (let p = 1; p < 3; p++) {
-              const img = await embedImage(photos[p])
-              const scaled = img.scale(0.35)
-              const x = startX + (p - 1) * (scaled.width + spacing)
-              page.drawImage(img, {
-                x,
-                y: y - scaled.height,
-                width: scaled.width,
-                height: scaled.height,
-              })
-            }
+            const totalWidth = scaled2.width + scaled3.width + spacing
+            let startX = (page.getWidth() - totalWidth) / 2
+            page.drawImage(img2, {
+              x: startX,
+              y: y - scaled2.height,
+              width: scaled2.width,
+              height: scaled2.height,
+            })
+            startX += scaled2.width + spacing
+            page.drawImage(img3, {
+              x: startX,
+              y: y - scaled3.height,
+              width: scaled3.width,
+              height: scaled3.height,
+            })
           }
         }
       }
@@ -338,18 +320,18 @@ export default function GeneratePDF({
       y -= 40
 
       if (signatureDataURL) {
-        const signatureBytes = await fetch(signatureDataURL).then((res) => res.arrayBuffer())
-        const signatureImg = await pdfDoc.embedPng(signatureBytes)
-        const sigScaled = signatureImg.scale(0.5)
-        lastPage.drawImage(signatureImg, {
+        const sigBytes = await fetch(signatureDataURL).then((r) => r.arrayBuffer())
+        const sigImg = await pdfDoc.embedPng(sigBytes)
+        const scaledSig = sigImg.scale(0.5)
+        lastPage.drawImage(sigImg, {
           x: 50,
-          y: y - sigScaled.height,
-          width: sigScaled.width,
-          height: sigScaled.height,
+          y: y - scaledSig.height,
+          width: scaledSig.width,
+          height: scaledSig.height,
         })
       }
 
-      // Envoi & sauvegarde
+      // Envoi + sauvegarde
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       const base64 = await blobToBase64(blob)
@@ -375,11 +357,7 @@ export default function GeneratePDF({
       const formData = new FormData()
       formData.append("filename", fileName)
       formData.append("file", new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" }), fileName)
-
-      await fetch("/api/save-pdf", {
-        method: "POST",
-        body: formData,
-      })
+      await fetch("/api/save-pdf", { method: "POST", body: formData })
 
       const link = document.createElement("a")
       link.href = URL.createObjectURL(blob)
