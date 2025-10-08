@@ -112,9 +112,9 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       addLine("Code :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // --- Correction : ajout d’un espacement avant la photo principale ---
-      y -= 40
-      if (y < 100) {
+      // --- Correction renforcée : espace plus grand avant la photo ---
+      y -= 80 // plus d’espace avant la photo pour éviter tout recouvrement
+      if (y < 200) {
         page = pdfDoc.addPage(pageSize)
         y = page.getHeight() - 100
       }
@@ -124,7 +124,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         const imageBitmap = await createImageBitmap(photoCopro)
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
-        const maxWidth = 450 // taille ajustée pour éviter de trop grandes images
+        const maxWidth = 450 // taille ajustée
         const scale = Math.min(maxWidth / imageBitmap.width, 0.6)
         canvas.width = imageBitmap.width * scale
         canvas.height = imageBitmap.height * scale
@@ -140,7 +140,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
 
         if (y - scaled.height < 50) {
           page = pdfDoc.addPage(pageSize)
-          y = page.getHeight() - 50
+          y = page.getHeight() - 100
         }
 
         page.drawImage(img, {
