@@ -72,6 +72,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       let page = pdfDoc.addPage(pageSize)
       let y = page.getHeight() - 50
 
+      // Bandeau rouge ORPI
       page.drawRectangle({ x: 25, y: page.getHeight() - 60, width: 140, height: 30, color: rgb(1, 0, 0) })
       page.drawText('ORPI Adimmo', {
         x: 40,
@@ -81,6 +82,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         color: rgb(1, 1, 1),
       })
 
+      // Titre principal
       page.drawText('RAPPORT DE VISITE', {
         x: 200,
         y,
@@ -101,6 +103,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         y -= 20
       }
 
+      // Infos générales
       addLine('Date :', visitData.date)
       addLine('Adresse :', visitData.address)
       addLine('Rédacteur :', visitData.redacteur)
@@ -109,15 +112,24 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       addLine("Code :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
+      // --- Correction : ajout d’un espacement avant la photo principale ---
+      y -= 40
+      if (y < 100) {
+        page = pdfDoc.addPage(pageSize)
+        y = page.getHeight() - 100
+      }
+
+      // --- Photo principale de la copro ---
       if (photoCopro) {
         const imageBitmap = await createImageBitmap(photoCopro)
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
-        const maxWidth = 500
-        const scale = maxWidth / imageBitmap.width
-        canvas.width = maxWidth
+        const maxWidth = 450 // taille ajustée pour éviter de trop grandes images
+        const scale = Math.min(maxWidth / imageBitmap.width, 0.6)
+        canvas.width = imageBitmap.width * scale
         canvas.height = imageBitmap.height * scale
         ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height)
+
         const compressedBlob: Blob = await new Promise(resolve =>
           canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.85)
         )
@@ -140,6 +152,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         y -= scaled.height + 20
       }
 
+      // --- Pages d’observations ---
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
         page = pdfDoc.addPage(pageSize)
@@ -226,6 +239,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         }
       }
 
+      // --- Page de validation ---
       const lastPage = pdfDoc.addPage(pageSize)
       y = lastPage.getHeight() - 80
       lastPage.drawText('Validation du rapport', {
@@ -259,6 +273,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         })
       }
 
+      // --- Envoi & sauvegarde ---
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const base64 = await blobToBase64(blob)
