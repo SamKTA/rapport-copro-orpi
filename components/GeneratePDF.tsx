@@ -144,7 +144,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height)
 
         const compressedBlob: Blob = await new Promise(resolve =>
-          canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.85)
+          canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.5)
         )
         const arrayBuffer = await compressedBlob.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
