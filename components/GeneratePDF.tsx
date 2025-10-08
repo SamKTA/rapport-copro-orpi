@@ -243,8 +243,8 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       // --- Upload vers Supabase ---
       const pdfBytes = await pdfDoc.save()
 
-      // ✅ Correction typage Blob
-      const pdfBlob = new Blob([pdfBytes.buffer], { type: 'application/pdf' })
+      // ✅ Typage stable compatible TS/Next/pdf-lib
+      const pdfBlob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' })
       
       const fileName = `rapport_${cleanFileName(visitData.address)}_${visitData.date}.pdf`
       const formData = new FormData()
