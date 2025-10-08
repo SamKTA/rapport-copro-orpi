@@ -43,6 +43,12 @@ export default function ObservationForm({ observations, setObservations }: Props
     setForm({ type: '✅ Positive', description: '', action: '', photos: [] })
   }
 
+  // 🗑️ Fonction pour supprimer une observation
+  const handleDelete = (index: number) => {
+    const updated = observations.filter((_, i) => i !== index)
+    setObservations(updated)
+  }
+
   return (
     <form onSubmit={handleAdd} className="space-y-6">
       <div className="space-y-2">
@@ -115,7 +121,7 @@ export default function ObservationForm({ observations, setObservations }: Props
           <h3 className="text-lg font-semibold text-gray-800">📋 Observations ajoutées</h3>
           <ul className="space-y-4">
             {observations.map((obs, index) => (
-              <li key={index} className="border p-4 rounded-md bg-gray-50">
+              <li key={index} className="border p-4 rounded-md bg-gray-50 relative">
                 <p><strong>Type :</strong> {obs.type}</p>
                 <p><strong>Description :</strong> {obs.description}</p>
                 {obs.action && <p><strong>Action :</strong> {obs.action}</p>}
@@ -131,6 +137,15 @@ export default function ObservationForm({ observations, setObservations }: Props
                     ))}
                   </div>
                 )}
+
+                {/* 🗑️ Bouton supprimer */}
+                <button
+                  type="button"
+                  onClick={() => handleDelete(index)}
+                  className="absolute top-2 right-2 text-red-600 hover:text-red-800 text-sm font-medium"
+                >
+                  🗑️ Supprimer
+                </button>
               </li>
             ))}
           </ul>
