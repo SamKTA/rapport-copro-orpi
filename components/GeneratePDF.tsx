@@ -112,19 +112,19 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       addLine("Code :", visitData.buildingCode)
       addLine("Personnes présentes :", visitData.personnesPresentes)
 
-      // --- Correction renforcée : espace plus grand avant la photo ---
-      y -= 80 // plus d’espace avant la photo pour éviter tout recouvrement
+      // Espace avant photo
+      y -= 80
       if (y < 200) {
         page = pdfDoc.addPage(pageSize)
         y = page.getHeight() - 100
       }
 
-      // --- Photo principale de la copro ---
+      // Photo principale
       if (photoCopro) {
         const imageBitmap = await createImageBitmap(photoCopro)
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
-        const maxWidth = 450 // taille ajustée
+        const maxWidth = 450
         const scale = Math.min(maxWidth / imageBitmap.width, 0.6)
         canvas.width = imageBitmap.width * scale
         canvas.height = imageBitmap.height * scale
@@ -152,7 +152,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         y -= scaled.height + 20
       }
 
-      // --- Pages d’observations ---
+      // Pages d’observations
       for (let i = 0; i < observations.length; i++) {
         const obs = observations[i]
         page = pdfDoc.addPage(pageSize)
@@ -204,42 +204,83 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
           y -= 30
         }
 
+        // --- NOUVELLE LOGIQUE POUR LES PHOTOS ---
         if (obs.photos?.length) {
-          for (const photo of obs.photos) {
-            const imageBitmap = await createImageBitmap(photo)
-            const canvas = document.createElement('canvas')
-            const ctx = canvas.getContext('2d')!
-            const maxWidth = 400
-            const scale = maxWidth / imageBitmap.width
-            canvas.width = maxWidth
-            canvas.height = imageBitmap.height * scale
-            ctx.drawImage(imageBitmap, 0, 0, canvas.width, canvas.height)
-            const compressedBlob: Blob = await new Promise(resolve =>
-              canvas.toBlob(blob => resolve(blob!), 'image/jpeg', 0.7)
-            )
-            const arrayBuffer = await compressedBlob.arrayBuffer()
-            const uint8Array = new Uint8Array(arrayBuffer)
-            const img = await pdfDoc.embedJpg(uint8Array)
+          const photos = obs.photos
+
+          // On commence les photos plus bas pour ne pas chevaucher le texte
+          y = page.getHeight() / 2
+
+          if (photos.length === 1) {
+            // 1 seule photo : centrée
+            const photo = photos[0]
+            const imgBytes = await photo.arrayBuffer()
+            const img = await pdfDoc.embedJpg(new Uint8Array(imgBytes))
             const scaled = img.scale(0.5)
-
-            if (y - scaled.height < 50) {
-              page = pdfDoc.addPage(pageSize)
-              y = page.getHeight() - 50
-            }
-
             page.drawImage(img, {
-              x: 50,
+              x: (page.getWidth() - scaled.width) / 2,
               y: y - scaled.height,
               width: scaled.width,
               height: scaled.height,
             })
+          } else if (photos.length === 2) {
+            // 2 photos côte à côte
+            const spacing = 20
+            const totalWidth = 2 * 200 + spacing
+            const startX = (page.getWidth() - totalWidth) / 2
 
-            y -= scaled.height + 20
+            for (let p = 0; p < 2; p++) {
+              const photo = photos[p]
+              const imgBytes = await photo.arrayBuffer()
+              const img = await pdfDoc.embedJpg(new Uint8Array(imgBytes))
+              const scaled = img.scale(0.35)
+              const x = startX + p * (scaled.width + spacing)
+              page.drawImage(img, {
+                x,
+                y: y - scaled.height,
+                width: scaled.width,
+                height: scaled.height,
+              })
+            }
+          } else if (photos.length === 3) {
+            // 3 photos : 1 centrée, 2 côte à côte
+            const first = photos[0]
+            const imgBytes1 = await first.arrayBuffer()
+            const img1 = await pdfDoc.embedJpg(new Uint8Array(imgBytes1))
+            const scaled1 = img1.scale(0.4)
+
+            // première photo centrée
+            page.drawImage(img1, {
+              x: (page.getWidth() - scaled1.width) / 2,
+              y: y - scaled1.height,
+              width: scaled1.width,
+              height: scaled1.height,
+            })
+
+            // les deux suivantes en dessous
+            y -= scaled1.height + 30
+            const spacing = 30
+            const totalWidth = 2 * 180 + spacing
+            const startX = (page.getWidth() - totalWidth) / 2
+
+            for (let p = 1; p < 3; p++) {
+              const photo = photos[p]
+              const imgBytes = await photo.arrayBuffer()
+              const img = await pdfDoc.embedJpg(new Uint8Array(imgBytes))
+              const scaled = img.scale(0.35)
+              const x = startX + (p - 1) * (scaled.width + spacing)
+              page.drawImage(img, {
+                x,
+                y: y - scaled.height,
+                width: scaled.width,
+                height: scaled.height,
+              })
+            }
           }
         }
       }
 
-      // --- Page de validation ---
+      // Page de validation
       const lastPage = pdfDoc.addPage(pageSize)
       y = lastPage.getHeight() - 80
       lastPage.drawText('Validation du rapport', {
@@ -273,7 +314,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         })
       }
 
-      // --- Envoi & sauvegarde ---
+      // Envoi et sauvegarde
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: 'application/pdf' })
       const base64 = await blobToBase64(blob)
