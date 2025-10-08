@@ -258,7 +258,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       
       const { data, error } = await uploadRes.json()
       if (error) throw new Error(error)
-      const publicUrl = data?.publicUrl
+      const publicUrl = `https://fsntxvyjyhbtrwsiirmy.supabase.co/storage/v1/object/public/rapports-visite/${encodeURIComponent(fileName)}`
 
       // --- Envoi mail ---
       await fetch('/api/send-pdf', {
