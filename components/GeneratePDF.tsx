@@ -245,7 +245,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       const fileName = `rapport_${cleanFileName(visitData.address)}_${visitData.date}.pdf`
       const formData = new FormData()
       formData.append('filename', fileName)
-      formData.append('file', new Blob([pdfBytes.buffer], { type: 'application/pdf' }), fileName)
+      formData.append('file', new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' }), fileName)
       
       const uploadRes = await fetch('/api/save-pdf', { method: 'POST', body: formData })
       const { data } = await uploadRes.json()
@@ -268,7 +268,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
       })
 
       // --- Téléchargement local ---
-      const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' })
+      const blob = new Blob([pdfBytes as unknown as BlobPart], { type: 'application/pdf' })
       const link = document.createElement('a')
       link.href = URL.createObjectURL(blob)
       link.download = 'rapport-visite.pdf'
