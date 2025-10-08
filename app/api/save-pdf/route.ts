@@ -16,9 +16,10 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // 🟢 Upload du fichier dans le bucket “pdfs”
+    // 🟢 Upload dans ton bucket "rapports-visite"
+    const bucketName = 'rapports-visite'
     const { data, error } = await supabase.storage
-      .from('pdfs')
+      .from(bucketName)
       .upload(fileName, file, { upsert: true })
 
     if (error) {
@@ -26,9 +27,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // 🔗 Génération de l’URL publique
+    // 🔗 Génère une URL publique
     const { data: publicData } = supabase.storage
-      .from('pdfs')
+      .from(bucketName)
       .getPublicUrl(fileName)
 
     return NextResponse.json({
