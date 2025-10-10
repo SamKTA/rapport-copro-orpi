@@ -30,7 +30,7 @@ function sanitizeText(text: string) {
     .replace(/\r?\n|\r/g, " ")
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^\x00-\x7F]/g, "")
+    .replace(/[^\x20-\x7E]/g, "") // enlève tout caractère non ASCII
     .replace(/[‘’]/g, "'")
     .replace(/[“”]/g, '"')
     .replace(/[…]/g, "...")
@@ -205,7 +205,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
           const ph = photoPage.getHeight()
           const margin = sideMargin
           const gap = 25
-          const top = ph - 80
+          const top = ph - 100
 
           const embedImage = async (file: File) => {
             const bitmap = await createImageBitmap(file)
@@ -216,39 +216,77 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
             canvas.width = bitmap.width * scale
             canvas.height = bitmap.height * scale
             ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-            const compressedBlob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.25))
+            const compressedBlob: Blob = await new Promise((resolve) =>
+              canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.25)
+            )
             const buf = await compressedBlob.arrayBuffer()
             return pdfDoc.embedJpg(new Uint8Array(buf))
           }
 
           if (obs.photos.length === 1) {
             const img = await embedImage(obs.photos[0])
-            const w = img.width
-            const h = img.height
-            photoPage.drawImage(img, { x: (pw - w) / 2, y: top - h, width: w, height: h })
+            const maxW = pw - 2 * margin
+            const maxH = ph - 200
+            const scale = Math.min(maxW / img.width, maxH / img.height, 0.8)
+            const w = img.width * scale
+            const h = img.height * scale
+            photoPage.drawImage(img, {
+              x: (pw - w) / 2,
+              y: (ph - h) / 2,
+              width: w,
+              height: h,
+            })
           } else if (obs.photos.length === 2) {
             const img1 = await embedImage(obs.photos[0])
             const img2 = await embedImage(obs.photos[1])
             const colW = (pw - 2 * margin - gap) / 2
-            const s1 = Math.min(colW / img1.width, 0.6)
-            const s2 = Math.min(colW / img2.width, 0.6)
+            const s1 = Math.min(colW / img1.width, 0.7)
+            const s2 = Math.min(colW / img2.width, 0.7)
             const w1 = img1.width * s1, h1 = img1.height * s1
             const w2 = img2.width * s2, h2 = img2.height * s2
-            const yRow = top - Math.max(h1, h2)
+            const rowH = Math.max(h1, h2)
+            const yRow = (ph - rowH) / 2
             photoPage.drawImage(img1, { x: margin + (colW - w1) / 2, y: yRow, width: w1, height: h1 })
             photoPage.drawImage(img2, { x: margin + colW + gap + (colW - w2) / 2, y: yRow, width: w2, height: h2 })
-          } else {
-            const img1 = await embedImage(obs.photos[0])
-            const img2 = await embedImage(obs.photos[1])
-            const img3 = await embedImage(obs.photos[2])
-            const s = 0.5
-            const w1 = img1.width * s, h1 = img1.height * s
-            const w2 = img2.width * s, h2 = img2.height * s
-            const w3 = img3.width * s, h3 = img3.height * s
-            photoPage.drawImage(img1, { x: (pw - w1) / 2, y: top - h1, width: w1, height: h1 })
-            const y2Top = top - h1 - gap - Math.max(h2, h3)
-            photoPage.drawImage(img2, { x: margin, y: y2Top, width: w2, height: h2 })
-            photoPage.drawImage(img3, { x: pw - margin - w3, y: y2Top, width: w3, height: h3 })
+          } else if (obs.photos.length >= 3) {
+            // --- 3 photos : 1 grande en haut, 2 côte à côte en bas ---
+            const [p1, p2, p3] = obs.photos
+            const img1 = await embedImage(p1)
+            const img2 = await embedImage(p2)
+            const img3 = await embedImage(p3)
+
+            // Photo 1 (grande en haut)
+            const maxW1 = pw - 2 * margin
+            const maxH1 = ph / 2.2
+            const s1 = Math.min(maxW1 / img1.width, maxH1 / img1.height, 0.65)
+            const w1 = img1.width * s1
+            const h1 = img1.height * s1
+            const y1 = top - h1
+            photoPage.drawImage(img1, { x: (pw - w1) / 2, y: y1, width: w1, height: h1 })
+
+            // Espace entre la grande et les petites
+            const y2Top = y1 - gap - (ph / 2.8)
+
+            // Photos 2 et 3 (côte à côte)
+            const colW = (pw - 2 * margin - gap) / 2
+            const s2 = Math.min(colW / img2.width, 0.5)
+            const s3 = Math.min(colW / img3.width, 0.5)
+            const w2 = img2.width * s2, h2 = img2.height * s2
+            const w3 = img3.width * s3, h3 = img3.height * s3
+            const yRow = Math.max(80, y2Top - Math.max(h2, h3))
+
+            photoPage.drawImage(img2, {
+              x: margin + (colW - w2) / 2,
+              y: yRow,
+              width: w2,
+              height: h2,
+            })
+            photoPage.drawImage(img3, {
+              x: margin + colW + gap + (colW - w3) / 2,
+              y: yRow,
+              width: w3,
+              height: h3,
+            })
           }
         }
       }
