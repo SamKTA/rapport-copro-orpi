@@ -207,22 +207,64 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
           const gap = 25
           const top = ph - 100
 
+          // ✅ Nouvelle fonction embedImage robuste
           const embedImage = async (file: File) => {
-            const bitmap = await createImageBitmap(file)
-            const canvas = document.createElement("canvas")
-            const ctx = canvas.getContext("2d")!
-            const maxWidth = 800
-            const scale = Math.min(maxWidth / bitmap.width, 0.6)
-            canvas.width = bitmap.width * scale
-            canvas.height = bitmap.height * scale
-            ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-            const compressedBlob: Blob = await new Promise((resolve) =>
-              canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.25)
-            )
-            const buf = await compressedBlob.arrayBuffer()
-            return pdfDoc.embedJpg(new Uint8Array(buf))
+            try {
+              let inputFile = file
+              if (!file.type || !file.type.startsWith("image/")) {
+                const reader = new FileReader()
+                const dataUrl: string = await new Promise((resolve, reject) => {
+                  reader.onload = () => resolve(reader.result as string)
+                  reader.onerror = reject
+                  reader.readAsDataURL(file)
+                })
+                const img = document.createElement("img")
+                await new Promise((resolve, reject) => {
+                  img.onload = resolve
+                  img.onerror = reject
+                  img.src = dataUrl
+                })
+                const canvas = document.createElement("canvas")
+                const ctx = canvas.getContext("2d")!
+                canvas.width = img.width
+                canvas.height = img.height
+                ctx.drawImage(img, 0, 0)
+                const blob: Blob = await new Promise((resolve) =>
+                  canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.85)
+                )
+                inputFile = new File([blob], file.name + ".jpg", { type: "image/jpeg" })
+              }
+
+              const bitmap = await createImageBitmap(inputFile)
+              const canvas = document.createElement("canvas")
+              const ctx = canvas.getContext("2d")!
+              const maxWidth = 800
+              const scale = Math.min(maxWidth / bitmap.width, 0.6)
+              canvas.width = bitmap.width * scale
+              canvas.height = bitmap.height * scale
+              ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+              const compressedBlob: Blob = await new Promise((resolve) =>
+                canvas.toBlob((b) => resolve(b!), "image/jpeg", 0.25)
+              )
+              const buf = await compressedBlob.arrayBuffer()
+              return pdfDoc.embedJpg(new Uint8Array(buf))
+            } catch (err) {
+              console.error("Erreur intégration image :", file.name, err)
+              const blankCanvas = document.createElement("canvas")
+              blankCanvas.width = 100
+              blankCanvas.height = 100
+              const ctx = blankCanvas.getContext("2d")!
+              ctx.fillStyle = "white"
+              ctx.fillRect(0, 0, 100, 100)
+              const blob: Blob = await new Promise((resolve) =>
+                blankCanvas.toBlob((b) => resolve(b!), "image/jpeg", 0.1)
+              )
+              const buf = await blob.arrayBuffer()
+              return pdfDoc.embedJpg(new Uint8Array(buf))
+            }
           }
 
+          // --- Placement des photos ---
           if (obs.photos.length === 1) {
             const img = await embedImage(obs.photos[0])
             const maxW = pw - 2 * margin
@@ -249,13 +291,10 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
             photoPage.drawImage(img1, { x: margin + (colW - w1) / 2, y: yRow, width: w1, height: h1 })
             photoPage.drawImage(img2, { x: margin + colW + gap + (colW - w2) / 2, y: yRow, width: w2, height: h2 })
           } else if (obs.photos.length >= 3) {
-            // --- 3 photos : 1 grande en haut, 2 côte à côte en bas ---
             const [p1, p2, p3] = obs.photos
             const img1 = await embedImage(p1)
             const img2 = await embedImage(p2)
             const img3 = await embedImage(p3)
-
-            // Photo 1 (grande en haut)
             const maxW1 = pw - 2 * margin
             const maxH1 = ph / 2.2
             const s1 = Math.min(maxW1 / img1.width, maxH1 / img1.height, 0.65)
@@ -263,35 +302,20 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
             const h1 = img1.height * s1
             const y1 = top - h1
             photoPage.drawImage(img1, { x: (pw - w1) / 2, y: y1, width: w1, height: h1 })
-
-            // Espace entre la grande et les petites
             const y2Top = y1 - gap - (ph / 2.8)
-
-            // Photos 2 et 3 (côte à côte)
             const colW = (pw - 2 * margin - gap) / 2
             const s2 = Math.min(colW / img2.width, 0.5)
             const s3 = Math.min(colW / img3.width, 0.5)
             const w2 = img2.width * s2, h2 = img2.height * s2
             const w3 = img3.width * s3, h3 = img3.height * s3
             const yRow = Math.max(80, y2Top - Math.max(h2, h3))
-
-            photoPage.drawImage(img2, {
-              x: margin + (colW - w2) / 2,
-              y: yRow,
-              width: w2,
-              height: h2,
-            })
-            photoPage.drawImage(img3, {
-              x: margin + colW + gap + (colW - w3) / 2,
-              y: yRow,
-              width: w3,
-              height: h3,
-            })
+            photoPage.drawImage(img2, { x: margin + (colW - w2) / 2, y: yRow, width: w2, height: h2 })
+            photoPage.drawImage(img3, { x: margin + colW + gap + (colW - w3) / 2, y: yRow, width: w3, height: h3 })
           }
         }
       }
 
-      // Page de validation
+      // --- Page de validation ---
       const lastPage = pdfDoc.addPage(pageSize)
       y = lastPage.getHeight() - 80
       lastPage.drawText("Validation du rapport", { x: sideMargin, y, size: 18, font: fontBold })
@@ -308,7 +332,7 @@ export default function GeneratePDF({ visitData, observations, signatureDataURL,
         lastPage.drawImage(sigImg, { x: sideMargin, y: y - scaled.height, width: scaled.width, height: scaled.height })
       }
 
-      // Sauvegarde + envoi
+      // --- Envoi & sauvegarde ---
       const pdfBytes = await pdfDoc.save()
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" })
       const base64 = await blobToBase64(blob)
